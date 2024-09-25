@@ -1,0 +1,28 @@
+port: 8080
+timeout: 10
+password_secret: "123456"
+
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  user: docker
+  password: 123456
+  db: forum-gin
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+
+logger:
+  level: "debug"       # 日志级别：debug, info, warn, error, dpanic, panic, fatal
+  format: "json"      # 输出格式：console 或 json
+  outputPaths:        # 日志输出路径，可以是多个
+    - "stdout"        # 输出到标准输出
+    - "./logs/app.log" # 输出到文件
+  errorOutputPaths:
+    - "stderr"        # 错误日志输出路径
+    - "./logs/error.log" # 错误日志输出到文件
+  maxSize: 100        # 单个日志文件的最大大小 (MB)
+  maxBackups: 7       # 保留的旧日志文件个数
+  maxAge: 30          # 日志文件保留天数
+  compress: true      # 是否压缩旧的日志文件
