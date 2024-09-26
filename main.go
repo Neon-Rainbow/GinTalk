@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"GinTalk/dao/MySQL"
 	"GinTalk/dao/Redis"
 	"GinTalk/logger"
 	"GinTalk/router"
 	"GinTalk/settings"
+	"fmt"
 )
 
 func main() {
