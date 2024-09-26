@@ -15,6 +15,6 @@ type LoginResponseDTO struct {
 type SignUpRequestDTO struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required,min=8"`
-	Email    string `json:"email" binding:"required, email"`
+	Email    string `json:"email" binding:"required,email"`
 	Gender   string `json:"gender"`
 }

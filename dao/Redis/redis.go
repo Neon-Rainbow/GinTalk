@@ -3,7 +3,7 @@ package Redis
 import (
 	"context"
 	"fmt"
-	"forum-gin/settings"
+	"GinTalk/settings"
 	"github.com/go-redis/redis/v8"
 )
 

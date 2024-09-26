@@ -3,7 +3,7 @@ package pkg
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"forum-gin/settings"
+	"GinTalk/settings"
 )
 
 // EncryptPassword 用于加密密码

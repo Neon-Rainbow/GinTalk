@@ -1,9 +1,9 @@
 package logger
 
 import (
+	"GinTalk/settings"
 	"bytes"
 	"fmt"
-	"forum-gin/settings"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
@@ -100,6 +100,7 @@ func GinLogger(logger *zap.Logger) gin.HandlerFunc {
 			zap.String("user-agent", c.Request.UserAgent()),
 			zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()),
 			zap.Duration("cost", cost),
+			zap.String("request_id", c.Request.Header.Get("X-Request-Id")),
 		)
 	}
 }

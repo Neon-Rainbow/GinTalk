@@ -1,14 +1,15 @@
 package service
 
 import (
+	"GinTalk/DTO"
+	"GinTalk/dao"
+	"GinTalk/model"
+	"GinTalk/pkg"
+	"GinTalk/pkg/apiError"
+	"GinTalk/pkg/code"
+	"GinTalk/pkg/jwt"
+	"GinTalk/utils"
 	"context"
-	"forum-gin/DTO"
-	"forum-gin/dao"
-	"forum-gin/model"
-	"forum-gin/pkg"
-	"forum-gin/pkg/apiError"
-	"forum-gin/pkg/code"
-	"forum-gin/pkg/jwt"
 	"github.com/jinzhu/copier"
 	"time"
 )
@@ -34,7 +35,7 @@ func LoginService(ctx context.Context, dto *DTO.LoginRequestDTO) (*DTO.LoginResp
 			Msg:  "生成token失败",
 		}
 	}
-	err = dao.StoreKeyValue(ctx, user.ID, map[string]interface{}{
+	err = dao.StoreKeyValue(ctx, utils.GenerateRedisKey(utils.UserTokenKeyTemplate, user.ID), map[string]interface{}{
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
 	}, 7*24*time.Hour)
@@ -72,4 +73,49 @@ func SignupService(ctx context.Context, dto *DTO.SignUpRequestDTO) *apiError.Api
 		}
 	}
 	return nil
+}
+
+func RefreshTokenService(ctx context.Context, token string) (string, string, *apiError.ApiError) {
+	myClaims, err := jwt.ParseToken(token)
+	if err != nil {
+		return "", "", &apiError.ApiError{
+			Code: code.UserRefreshTokenError,
+			Msg:  err.Error(),
+		}
+	}
+	userID := myClaims.UserID
+	// 从 redis 中获取 refresh token,判断是否一致
+	value, err := dao.GetKeyValue[map[string]string](ctx, utils.GenerateRedisKey(utils.UserTokenKeyTemplate, userID))
+	if err != nil {
+		return "", "", &apiError.ApiError{
+			Code: code.UserRefreshTokenError,
+			Msg:  err.Error(),
+		}
+	}
+	if value["refresh_token"] != token {
+		return "", "", &apiError.ApiError{
+			Code: code.UserRefreshTokenError,
+			Msg:  "refresh token 错误",
+		}
+	}
+	// 生成新的 token
+	accessToken, refreshToken, err := jwt.GenerateToken(userID)
+	if err != nil {
+		return "", "", &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "生成token失败",
+		}
+	}
+	// 更新 redis 中的 token
+	err = dao.StoreKeyValue(ctx, utils.GenerateRedisKey(utils.UserTokenKeyTemplate, userID), map[string]interface{}{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	}, 7*24*time.Hour)
+	if err != nil {
+		return "", "", &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "存储token失败",
+		}
+	}
+	return accessToken, refreshToken, nil
 }

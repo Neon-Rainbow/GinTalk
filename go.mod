@@ -1,4 +1,4 @@
-module forum-gin
+module GinTalk
 
 go 1.23.1
 

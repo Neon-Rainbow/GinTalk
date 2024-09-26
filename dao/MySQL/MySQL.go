@@ -1,11 +1,15 @@
 package MySQL
 
 import (
+	"GinTalk/model"
+	"GinTalk/settings"
 	"fmt"
-	"forum-gin/model"
-	"forum-gin/settings"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
+	"os"
+	"time"
 )
 
 var db *gorm.DB
@@ -19,7 +23,19 @@ func Init(config *settings.MysqlConfig) (err error) {
 		config.DB,
 	)
 
-	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // 日志输出到标准输出
+		logger.Config{
+			SlowThreshold:             time.Second, // 慢 SQL 阈值
+			LogLevel:                  logger.Info, // 级别
+			IgnoreRecordNotFoundError: true,        // 忽略 ErrRecordNotFound 错误
+			Colorful:                  false,       // 禁用彩色打印
+		},
+	)
+
+	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: newLogger,
+	})
 	if err != nil {
 		return err
 	}

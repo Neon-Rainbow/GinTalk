@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"forum-gin/pkg/apiError"
-	"forum-gin/pkg/code"
+	"GinTalk/pkg/apiError"
+	"GinTalk/pkg/code"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )

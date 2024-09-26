@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"forum-gin/dao/MySQL"
-	"forum-gin/dao/Redis"
-	"forum-gin/logger"
-	"forum-gin/router"
-	"forum-gin/settings"
+	"GinTalk/dao/MySQL"
+	"GinTalk/dao/Redis"
+	"GinTalk/logger"
+	"GinTalk/router"
+	"GinTalk/settings"
 )
 
 func main() {

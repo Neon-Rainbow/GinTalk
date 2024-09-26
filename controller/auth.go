@@ -1,8 +1,10 @@
 package controller
 
 import (
-	"forum-gin/pkg/code"
-	"forum-gin/pkg/jwt"
+	"GinTalk/dao"
+	"GinTalk/pkg/code"
+	"GinTalk/pkg/jwt"
+	"GinTalk/utils"
 	"github.com/gin-gonic/gin"
 	"strings"
 )
@@ -33,6 +35,19 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+
+		value, err := dao.GetKeyValue[map[string]string](c.Request.Context(), utils.GenerateRedisKey(utils.UserTokenKeyTemplate, myClaims.UserID))
+		if err != nil {
+			ResponseErrorWithCode(c, code.InvalidAuth)
+			c.Abort()
+			return
+		}
+		if value["access_token"] != token {
+			ResponseErrorWithCode(c, code.InvalidAuth)
+			c.Abort()
+			return
+		}
+
 		c.Set("user_id", myClaims.UserID)
 		c.Next()
 	}

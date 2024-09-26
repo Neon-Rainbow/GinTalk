@@ -1,6 +1,6 @@
 package apiError
 
-import "forum-gin/pkg/code"
+import "GinTalk/pkg/code"
 
 type ApiError struct {
 	Code code.RespCode `json:"code"`

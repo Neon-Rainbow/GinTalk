@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
-	"forum-gin/dao/Redis"
+	"GinTalk/dao/Redis"
 	"time"
 )
 

@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"forum-gin/settings"
+	"GinTalk/settings"
 	"go.uber.org/zap"
 )
 
