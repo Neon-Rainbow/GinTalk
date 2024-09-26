@@ -33,6 +33,7 @@ type LoggerConfig struct {
 }
 
 type Settings struct {
+	Host           string `mapstructure:"host"`
 	Port           int    `mapstructure:"port"`
 	Timeout        int    `mapstructure:"timeout"`
 	PasswordSecret string `mapstructure:"password_secret"`
@@ -51,6 +52,7 @@ func Init() error {
 	viper.SetDefault("redis.host", "localhost")
 	viper.SetDefault("redis.port", 6379)
 	viper.SetDefault("port", 8080)
+	viper.SetDefault("host", "localhost")
 	viper.SetDefault("logger.level", "debug")
 	viper.SetDefault("timeout", 10)
 
