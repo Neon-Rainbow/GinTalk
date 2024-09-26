@@ -83,3 +83,5 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+# 日志文件
+*.log
