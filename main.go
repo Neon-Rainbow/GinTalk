@@ -30,7 +30,7 @@ func main() {
 
 	// 初始化路由
 	r := router.SetupRouter()
-	err := r.Run(fmt.Sprintf(":%d", settings.Conf.Port))
+	err := r.Run(fmt.Sprintf("%s:%d", settings.Conf.Host, settings.Conf.Port))
 	if err != nil {
 		fmt.Printf("启动失败,错误原因: %v\n", err)
 	}
