@@ -8,7 +8,7 @@ type LoginRequestDTO struct {
 type LoginResponseDTO struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
-	UserID       uint   `json:"user_id"`
+	UserID       int64  `json:"user_id"`
 	Username     string `json:"username"`
 }
 

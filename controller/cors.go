@@ -11,17 +11,46 @@ type CorsConfig struct {
 	AllowHeaders []string
 }
 
-// NewCorsConfig 用于创建一个新的CorsConfig实例, 并设置默认值
-func NewCorsConfig() *CorsConfig {
-	return &CorsConfig{
+type Option func(*CorsConfig)
+
+// newCorsConfig 用于创建一个新的CorsConfig实例, 并设置默认值
+func newCorsConfig(options ...Option) *CorsConfig {
+	defaultCfg := &CorsConfig{
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
 	}
+	for _, option := range options {
+		option(defaultCfg)
+	}
+	return defaultCfg
+}
+
+// WithAllowOrigins 设置允许的跨域来源
+func WithAllowOrigins(origins []string) Option {
+	return func(cfg *CorsConfig) {
+		cfg.AllowOrigins = origins
+	}
+}
+
+// WithAllowMethods 设置允许的 HTTP 方法
+func WithAllowMethods(methods []string) Option {
+	return func(cfg *CorsConfig) {
+		cfg.AllowMethods = methods
+	}
+}
+
+// WithAllowHeaders 设置允许的 HTTP 头
+func WithAllowHeaders(headers []string) Option {
+	return func(cfg *CorsConfig) {
+		cfg.AllowHeaders = headers
+	}
 }
 
 // CorsMiddleware 用于允许跨域请求
-func CorsMiddleware(cfg *CorsConfig) gin.HandlerFunc {
+func CorsMiddleware(options ...Option) gin.HandlerFunc {
+	cfg := newCorsConfig(options...)
+
 	return func(c *gin.Context) {
 		origins := strings.Join(cfg.AllowOrigins, ", ")
 		methods := strings.Join(cfg.AllowMethods, ", ")

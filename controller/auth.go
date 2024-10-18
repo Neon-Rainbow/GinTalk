@@ -1,14 +1,20 @@
 package controller
 
 import (
-	"GinTalk/dao"
 	"GinTalk/pkg/code"
 	"GinTalk/pkg/jwt"
-	"GinTalk/utils"
 	"github.com/gin-gonic/gin"
 	"strings"
 )
 
+const (
+	// ContextUserIDKey 是上下文中用户ID的key
+	ContextUserIDKey = "user_id"
+)
+
+// JWTAuthMiddleware JWT 认证中间件, 用于验证用户是否登录
+// 如果用户登录, 会将用户ID设置到上下文中
+// 如果用户未登录, 会返回错误响应
 func JWTAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.Request.Header.Get("Authorization")
@@ -30,25 +36,25 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		if myClaims.TokenType != "access" {
+		if myClaims.TokenType != jwt.AccessTokenName {
 			ResponseErrorWithCode(c, code.InvalidAuth)
 			c.Abort()
 			return
 		}
 
-		value, err := dao.GetKeyValue[map[string]string](c.Request.Context(), utils.GenerateRedisKey(utils.UserTokenKeyTemplate, myClaims.UserID))
-		if err != nil {
-			ResponseErrorWithCode(c, code.InvalidAuth)
-			c.Abort()
-			return
-		}
-		if value["access_token"] != token {
-			ResponseErrorWithCode(c, code.InvalidAuth)
-			c.Abort()
-			return
-		}
+		//value, err := dao.GetUserTokenFromRedis(c, myClaims.UserID)
+		//if err != nil {
+		//	ResponseErrorWithCode(c, code.InvalidAuth)
+		//	c.Abort()
+		//	return
+		//}
+		//if value["access_token"] != token {
+		//	ResponseErrorWithCode(c, code.InvalidAuth)
+		//	c.Abort()
+		//	return
+		//}
 
-		c.Set("user_id", myClaims.UserID)
+		c.Set(ContextUserIDKey, myClaims.UserID)
 		c.Next()
 	}
 }

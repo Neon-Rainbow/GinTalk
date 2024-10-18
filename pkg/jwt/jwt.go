@@ -1,12 +1,21 @@
 package jwt
 
 import (
+	"fmt"
 	"github.com/golang-jwt/jwt/v5"
+	"strconv"
 	"sync"
 	"time"
 )
 
 var mySecret = "111"
+
+const (
+	// AccessTokenName 是访问令牌的key
+	AccessTokenName = "access"
+	// RefreshTokenName 是刷新令牌的key
+	RefreshTokenName = "refresh"
+)
 
 type MyClaims struct {
 	UserID    uint   `json:"user_id"`
@@ -15,7 +24,23 @@ type MyClaims struct {
 }
 
 // GenerateToken 生成token
-func GenerateToken(userID uint) (accessToken string, refreshToken string, err error) {
+func GenerateToken[T int64 | string | uint](userID T) (accessToken string, refreshToken string, err error) {
+	var uintUserID uint
+	switch v := any(userID).(type) {
+	case uint:
+		uintUserID = uint(v)
+	case int64:
+		uintUserID = uint(v)
+	case string:
+		// 尝试将 string 转为 uint
+		parsedID, err := strconv.ParseUint(v, 10, 32) // 假设 uint 是 32 位
+		if err != nil {
+			return "", "", fmt.Errorf("invalid userID format, could not convert to uint: %v", err)
+		}
+		uintUserID = uint(parsedID)
+	default:
+		return "", "", fmt.Errorf("unsupported userID type")
+	}
 
 	f := func(userID uint, tokenType string, validTime time.Duration) (string, error) {
 		c := MyClaims{
@@ -35,7 +60,7 @@ func GenerateToken(userID uint) (accessToken string, refreshToken string, err er
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		accessToken, err = f(userID, "access", time.Hour)
+		accessToken, err = f(uintUserID, AccessTokenName, time.Hour)
 		if err != nil {
 			errorChannel <- err
 			return
@@ -44,7 +69,7 @@ func GenerateToken(userID uint) (accessToken string, refreshToken string, err er
 
 	go func() {
 		defer wg.Done()
-		refreshToken, err = f(userID, "refresh", time.Hour*24)
+		refreshToken, err = f(uintUserID, RefreshTokenName, time.Hour*24)
 		if err != nil {
 			errorChannel <- err
 			return

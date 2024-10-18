@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
+	"sync"
 )
 
-var Conf = new(Settings)
+var conf = new(Settings)
+var once sync.Once
 
 type MysqlConfig struct {
 	Host     string `mapstructure:"host"`
@@ -42,8 +44,8 @@ type Settings struct {
 	*LoggerConfig  `mapstructure:"logger"`
 }
 
-// Init 用于初始化配置文件
-func Init() error {
+// initConfig 用于初始化配置文件
+func initConfig() error {
 	viper.SetConfigFile("./conf/config.yaml")
 
 	// 设置mysql和redis的默认端口和host
@@ -67,8 +69,20 @@ func Init() error {
 	if err != nil {
 		panic(fmt.Errorf("ReadInConfig failed, err: %v", err))
 	}
-	if err := viper.Unmarshal(&Conf); err != nil {
-		panic(fmt.Errorf("unmarshal to Conf failed, err:%v", err))
+	if err := viper.Unmarshal(&conf); err != nil {
+		panic(fmt.Errorf("unmarshal to conf failed, err:%v", err))
 	}
 	return err
+}
+
+// GetConfig 用于获取配置文件
+// 使用单例模式，确保配置文件只被初始化一次
+func GetConfig() *Settings {
+	once.Do(
+		func() {
+			if err := initConfig(); err != nil {
+				fmt.Printf("初始化配置文件失败,错误原因: %v\n", err)
+			}
+		})
+	return conf
 }

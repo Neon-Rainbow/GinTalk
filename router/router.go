@@ -3,12 +3,10 @@ package router
 import (
 	"GinTalk/controller"
 	"GinTalk/logger"
-	"GinTalk/settings"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"net/http"
-	"time"
 )
 
 func SetupRouter() *gin.Engine {
@@ -20,8 +18,13 @@ func SetupRouter() *gin.Engine {
 	v1 := r.Group("/api/v1").Use(
 		controller.LimitBodySizeMiddleware(1<<20),
 		requestid.New(),
-		controller.TimeoutMiddleware(time.Duration(settings.Conf.Timeout)*time.Second),
-		controller.CorsMiddleware(controller.NewCorsConfig()),
+		//controller.TimeoutMiddleware(
+		//	controller.WithTimeout(time.Duration(settings.GetConfig().Timeout)),
+		//	controller.WithTimeoutMsg("请求超时"),
+		//),
+		controller.CorsMiddleware(
+			controller.WithAllowOrigins([]string{"localhost"}),
+		),
 	)
 	{
 		v1.GET("/ping", func(c *gin.Context) {
@@ -29,15 +32,23 @@ func SetupRouter() *gin.Engine {
 				"message": "pong",
 			})
 		})
-		v1.POST("/login", controller.LoginHandler)
-		v1.POST("/signup", controller.SignUpHandler)
-		v1.GET("/refresh_token", controller.RefreshHandler)
+
+		// 用户登录注册
+		authController := controller.NewAuthHandler()
+
+		v1.POST("/login", authController.LoginHandler)
+		v1.POST("/signup", authController.SignUpHandler)
+		v1.GET("/refresh_token", authController.RefreshHandler)
 	}
 
 	v1.Use(controller.JWTAuthMiddleware())
+	communityController := controller.NewCommunityController()
+	postController := controller.NewPostHandler()
 	{
-		v1.GET("/community", controller.CommunityHandler)
-		v1.GET("/community/:id", controller.CommunityDetailHandler)
+		v1.GET("/community", communityController.CommunityHandler)
+		v1.GET("/community/:id", communityController.CommunityDetailHandler)
+
+		v1.POST("/post", postController.CreatePostHandler)
 	}
 
 	r.NoRoute(func(c *gin.Context) {

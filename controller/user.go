@@ -2,16 +2,28 @@ package controller
 
 import (
 	"GinTalk/DTO"
+	"GinTalk/container"
 	"GinTalk/pkg/code"
 	"GinTalk/service"
 	"github.com/gin-gonic/gin"
 )
 
+type AuthHandler struct {
+	service.AuthServiceInterface
+}
+
+// NewAuthHandler 创建 AuthHandler 实例
+func NewAuthHandler() *AuthHandler {
+	return &AuthHandler{
+		container.GetAuthService(),
+	}
+}
+
 // LoginHandler 登录接口
 // @Summary 登录接口
 // @Description 登录接口
 // @Tags 登录
-func LoginHandler(c *gin.Context) {
+func (ah *AuthHandler) LoginHandler(c *gin.Context) {
 	var loginDTO DTO.LoginRequestDTO
 	if err := c.ShouldBindJSON(&loginDTO); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
@@ -20,7 +32,7 @@ func LoginHandler(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	resp, apiError := service.LoginService(ctx, &loginDTO)
+	resp, apiError := ah.AuthServiceInterface.LoginService(ctx, &loginDTO)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -35,7 +47,7 @@ func LoginHandler(c *gin.Context) {
 // @Tags 登录
 // @Accept json
 // @Produce json
-func SignUpHandler(c *gin.Context) {
+func (ah *AuthHandler) SignUpHandler(c *gin.Context) {
 	var SignupDTO DTO.SignUpRequestDTO
 	if err := c.ShouldBindJSON(&SignupDTO); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
@@ -43,7 +55,7 @@ func SignUpHandler(c *gin.Context) {
 	}
 	ctx := c.Request.Context()
 
-	apiError := service.SignupService(ctx, &SignupDTO)
+	apiError := ah.AuthServiceInterface.SignupService(ctx, &SignupDTO)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -57,10 +69,10 @@ func SignUpHandler(c *gin.Context) {
 // @Tags 登录
 // @Accept json
 // @Produce json
-func RefreshHandler(c *gin.Context) {
+func (ah *AuthHandler) RefreshHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	token := c.Query("refresh_token")
-	accessToken, refreshToken, apiError := service.RefreshTokenService(ctx, token)
+	accessToken, refreshToken, apiError := ah.AuthServiceInterface.RefreshTokenService(ctx, token)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return

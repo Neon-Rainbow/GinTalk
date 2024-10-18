@@ -9,3 +9,7 @@
 docker-compose up
 ```
 
+## 运行项目
+```shell
+go run main.go
+```

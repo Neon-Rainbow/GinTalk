@@ -9,8 +9,8 @@ import (
 
 type Response struct {
 	Code code.RespCode `json:"code"`
-	Msg  string        `json:"msg"`
-	Data interface{}   `json:"data"`
+	Msg  string        `json:"msg,omitempty"`
+	Data interface{}   `json:"data,omitempty"`
 }
 
 func ResponseSuccess(c *gin.Context, data interface{}) {

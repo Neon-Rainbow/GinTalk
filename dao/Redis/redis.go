@@ -1,17 +1,19 @@
 package Redis
 
 import (
+	"GinTalk/settings"
 	"context"
 	"fmt"
-	"GinTalk/settings"
 	"github.com/go-redis/redis/v8"
+	"sync"
 )
 
 // redisClient 用于存储redis连接
 var redisClient *redis.Client
+var once sync.Once
 
-// Init 初始化redis连接
-func Init(config *settings.RedisConfig) (err error) {
+// initRedis 初始化redis连接
+func initRedis(config *settings.RedisConfig) (err error) {
 	// 初始化redis连接
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", config.Host, config.Port),
@@ -31,6 +33,14 @@ func Close() {
 	_ = redisClient.Close()
 }
 
+// GetRedisClient 获取redis连接
 func GetRedisClient() *redis.Client {
+	once.Do(
+		func() {
+			err := initRedis(settings.GetConfig().RedisConfig)
+			if err != nil {
+				panic(err)
+			}
+		})
 	return redisClient
 }

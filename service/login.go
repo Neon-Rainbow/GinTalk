@@ -8,15 +8,32 @@ import (
 	"GinTalk/pkg/apiError"
 	"GinTalk/pkg/code"
 	"GinTalk/pkg/jwt"
-	"GinTalk/utils"
 	"context"
 	"github.com/jinzhu/copier"
-	"time"
 )
 
-func LoginService(ctx context.Context, dto *DTO.LoginRequestDTO) (*DTO.LoginResponseDTO, *apiError.ApiError) {
-	user, err := dao.GetUserByUsername(ctx, dto.Username)
-	if err != nil {
+type AuthServiceInterface interface {
+	LoginService(ctx context.Context, dto *DTO.LoginRequestDTO) (*DTO.LoginResponseDTO, *apiError.ApiError)
+	SignupService(ctx context.Context, dto *DTO.SignUpRequestDTO) *apiError.ApiError
+	RefreshTokenService(ctx context.Context, token string) (string, string, *apiError.ApiError)
+}
+
+type AuthService struct {
+	userDao dao.IUserDo
+}
+
+func NewAuthService(userDao dao.IUserDo) AuthServiceInterface {
+	return &AuthService{
+		userDao: userDao,
+	}
+}
+
+func (as *AuthService) LoginService(ctx context.Context, dto *DTO.LoginRequestDTO) (*DTO.LoginResponseDTO, *apiError.ApiError) {
+	user, err := as.userDao.WithContext(ctx).
+		Select(dao.User.UserID, dao.User.Username, dao.User.Password).
+		Where(dao.User.Username.Eq(dto.Username)).
+		First()
+	if err != nil || user == nil {
 		return nil, &apiError.ApiError{
 			Code: code.UserNotExist,
 			Msg:  "用户不存在",
@@ -35,16 +52,13 @@ func LoginService(ctx context.Context, dto *DTO.LoginRequestDTO) (*DTO.LoginResp
 			Msg:  "生成token失败",
 		}
 	}
-	err = dao.StoreKeyValue(ctx, utils.GenerateRedisKey(utils.UserTokenKeyTemplate, user.ID), map[string]interface{}{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
-	}, 7*24*time.Hour)
-	if err != nil {
-		return nil, &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  "存储token失败",
-		}
-	}
+	//err = dao.SaveUserTokenToRedis(ctx, user.ID, accessToken, refreshToken)
+	//if err != nil {
+	//	return nil, &apiError.ApiError{
+	//		Code: code.ServerError,
+	//		Msg:  "存储token失败",
+	//	}
+	//}
 	return &DTO.LoginResponseDTO{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -53,7 +67,7 @@ func LoginService(ctx context.Context, dto *DTO.LoginRequestDTO) (*DTO.LoginResp
 	}, nil
 }
 
-func SignupService(ctx context.Context, dto *DTO.SignUpRequestDTO) *apiError.ApiError {
+func (as *AuthService) SignupService(ctx context.Context, dto *DTO.SignUpRequestDTO) *apiError.ApiError {
 	dto.Password = pkg.EncryptPassword(dto.Password)
 	var user model.User
 
@@ -65,7 +79,7 @@ func SignupService(ctx context.Context, dto *DTO.SignUpRequestDTO) *apiError.Api
 		}
 	}
 
-	err = dao.CreateUser(ctx, &user)
+	err = as.userDao.WithContext(ctx).Create(&user)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -75,7 +89,7 @@ func SignupService(ctx context.Context, dto *DTO.SignUpRequestDTO) *apiError.Api
 	return nil
 }
 
-func RefreshTokenService(ctx context.Context, token string) (string, string, *apiError.ApiError) {
+func (as *AuthService) RefreshTokenService(ctx context.Context, token string) (string, string, *apiError.ApiError) {
 	myClaims, err := jwt.ParseToken(token)
 	if err != nil {
 		return "", "", &apiError.ApiError{
@@ -84,20 +98,20 @@ func RefreshTokenService(ctx context.Context, token string) (string, string, *ap
 		}
 	}
 	userID := myClaims.UserID
-	// 从 redis 中获取 refresh token,判断是否一致
-	value, err := dao.GetKeyValue[map[string]string](ctx, utils.GenerateRedisKey(utils.UserTokenKeyTemplate, userID))
-	if err != nil {
-		return "", "", &apiError.ApiError{
-			Code: code.UserRefreshTokenError,
-			Msg:  err.Error(),
-		}
-	}
-	if value["refresh_token"] != token {
-		return "", "", &apiError.ApiError{
-			Code: code.UserRefreshTokenError,
-			Msg:  "refresh token 错误",
-		}
-	}
+	//// 从 redis 中获取 refresh token,判断是否一致
+	//value, err := dao.GetUserTokenFromRedis(ctx, userID)
+	//if err != nil {
+	//	return "", "", &apiError.ApiError{
+	//		Code: code.UserRefreshTokenError,
+	//		Msg:  err.Error(),
+	//	}
+	//}
+	//if value["refresh_token"] != token {
+	//	return "", "", &apiError.ApiError{
+	//		Code: code.UserRefreshTokenError,
+	//		Msg:  "refresh token 错误",
+	//	}
+	//}
 	// 生成新的 token
 	accessToken, refreshToken, err := jwt.GenerateToken(userID)
 	if err != nil {
@@ -107,15 +121,13 @@ func RefreshTokenService(ctx context.Context, token string) (string, string, *ap
 		}
 	}
 	// 更新 redis 中的 token
-	err = dao.StoreKeyValue(ctx, utils.GenerateRedisKey(utils.UserTokenKeyTemplate, userID), map[string]interface{}{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
-	}, 7*24*time.Hour)
-	if err != nil {
-		return "", "", &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  "存储token失败",
-		}
-	}
+	//err = dao.SaveUserTokenToRedis(ctx, userID, accessToken, refreshToken)
+	//if err != nil {
+	//	return "", "", &apiError.ApiError{
+	//		Code: code.ServerError,
+	//		Msg:  "存储token失败",
+	//	}
+	//}
 	return accessToken, refreshToken, nil
+
 }
