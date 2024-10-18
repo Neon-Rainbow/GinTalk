@@ -99,3 +99,34 @@ CREATE TABLE `comment`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci;
+
+DROP TABLE IF EXISTS `vote`;
+CREATE TABLE `vote`
+(
+    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '自增主键，唯一标识每条投票记录',
+    `post_id` bigint(20) NOT NULL COMMENT '投票所属的帖子ID',
+    `user_id` bigint(20) NOT NULL COMMENT '投票用户的用户ID',
+    `vote` tinyint(4) NOT NULL COMMENT '投票类型：1-赞，-1-踩',
+    `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '投票创建时间，默认当前时间',
+    `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '投票更新时间，每次更新时自动修改',
+    `delete_time` timestamp NULL COMMENT '逻辑删除时间，NULL表示未删除',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `idx_post_id_user_id_delete_time` (`post_id`, `user_id`, `delete_time`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_general_ci;
+
+DROP TABLE IF EXISTS `content_votes`;
+CREATE TABLE `content_votes`
+(
+    `post_id` bigint(20) NOT NULL COMMENT '投票所属的帖子ID',
+    `count` int(11) NOT NULL DEFAULT '0' COMMENT '投票总数',
+    `up` int(11) NOT NULL DEFAULT '0' COMMENT '赞数',
+    `down` int(11) NOT NULL DEFAULT '0' COMMENT '踩数',
+    `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '投票创建时间，默认当前时间',
+    `update_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '投票更新时间，每次更新时自动修改',
+    `delete_time` timestamp NULL COMMENT '逻辑删除时间，NULL表示未删除',
+    UNIQUE KEY `idx_post_id_delete_time` (`post_id`, `delete_time`)
+) ENGINE = InnoDB
+    DEFAULT CHARSET = utf8mb4
+    COLLATE = utf8mb4_general_ci;

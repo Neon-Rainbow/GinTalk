@@ -16,49 +16,59 @@ import (
 )
 
 var (
-	Q         = new(Query)
-	Comment   *comment
-	Community *community
-	Post      *post
-	User      *user
+	Q           = new(Query)
+	Comment     *comment
+	Community   *community
+	ContentVote *contentVote
+	Post        *post
+	User        *user
+	Vote        *vote
 )
 
 func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	*Q = *Use(db, opts...)
 	Comment = &Q.Comment
 	Community = &Q.Community
+	ContentVote = &Q.ContentVote
 	Post = &Q.Post
 	User = &Q.User
+	Vote = &Q.Vote
 }
 
 func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
-		db:        db,
-		Comment:   newComment(db, opts...),
-		Community: newCommunity(db, opts...),
-		Post:      newPost(db, opts...),
-		User:      newUser(db, opts...),
+		db:          db,
+		Comment:     newComment(db, opts...),
+		Community:   newCommunity(db, opts...),
+		ContentVote: newContentVote(db, opts...),
+		Post:        newPost(db, opts...),
+		User:        newUser(db, opts...),
+		Vote:        newVote(db, opts...),
 	}
 }
 
 type Query struct {
 	db *gorm.DB
 
-	Comment   comment
-	Community community
-	Post      post
-	User      user
+	Comment     comment
+	Community   community
+	ContentVote contentVote
+	Post        post
+	User        user
+	Vote        vote
 }
 
 func (q *Query) Available() bool { return q.db != nil }
 
 func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
-		db:        db,
-		Comment:   q.Comment.clone(db),
-		Community: q.Community.clone(db),
-		Post:      q.Post.clone(db),
-		User:      q.User.clone(db),
+		db:          db,
+		Comment:     q.Comment.clone(db),
+		Community:   q.Community.clone(db),
+		ContentVote: q.ContentVote.clone(db),
+		Post:        q.Post.clone(db),
+		User:        q.User.clone(db),
+		Vote:        q.Vote.clone(db),
 	}
 }
 
@@ -72,27 +82,33 @@ func (q *Query) WriteDB() *Query {
 
 func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	return &Query{
-		db:        db,
-		Comment:   q.Comment.replaceDB(db),
-		Community: q.Community.replaceDB(db),
-		Post:      q.Post.replaceDB(db),
-		User:      q.User.replaceDB(db),
+		db:          db,
+		Comment:     q.Comment.replaceDB(db),
+		Community:   q.Community.replaceDB(db),
+		ContentVote: q.ContentVote.replaceDB(db),
+		Post:        q.Post.replaceDB(db),
+		User:        q.User.replaceDB(db),
+		Vote:        q.Vote.replaceDB(db),
 	}
 }
 
 type queryCtx struct {
-	Comment   ICommentDo
-	Community ICommunityDo
-	Post      IPostDo
-	User      IUserDo
+	Comment     ICommentDo
+	Community   ICommunityDo
+	ContentVote IContentVoteDo
+	Post        IPostDo
+	User        IUserDo
+	Vote        IVoteDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
-		Comment:   q.Comment.WithContext(ctx),
-		Community: q.Community.WithContext(ctx),
-		Post:      q.Post.WithContext(ctx),
-		User:      q.User.WithContext(ctx),
+		Comment:     q.Comment.WithContext(ctx),
+		Community:   q.Community.WithContext(ctx),
+		ContentVote: q.ContentVote.WithContext(ctx),
+		Post:        q.Post.WithContext(ctx),
+		User:        q.User.WithContext(ctx),
+		Vote:        q.Vote.WithContext(ctx),
 	}
 }
 
