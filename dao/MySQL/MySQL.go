@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"log"
+	"os"
 	"sync"
+	"time"
 )
 
 var (
@@ -24,18 +27,18 @@ func initDB(config *settings.MysqlConfig) (err error) {
 		config.DB,
 	)
 
-	//newLogger := logger.New(
-	//	log.New(os.Stdout, "\r\n", log.LstdFlags), // 日志输出到标准输出
-	//	logger.Config{
-	//		SlowThreshold:             time.Second, // 慢 SQL 阈值
-	//		LogLevel:                  logger.Info, // 级别
-	//		IgnoreRecordNotFoundError: true,        // 忽略 ErrRecordNotFound 错误
-	//		Colorful:                  false,       // 禁用彩色打印
-	//	},
-	//)
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // 日志输出到标准输出
+		logger.Config{
+			SlowThreshold:             time.Second, // 慢 SQL 阈值
+			LogLevel:                  logger.Info, // 级别
+			IgnoreRecordNotFoundError: true,        // 忽略 ErrRecordNotFound 错误
+			Colorful:                  true,        // 彩色打印
+		},
+	)
 
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		//Logger: newLogger,
+		Logger: newLogger,
 	})
 	if err != nil {
 		return err
