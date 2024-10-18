@@ -26,7 +26,7 @@ func InitContainer() {
 		communityService = service.NewCommunityService(dao.Community.WithContext(context.Background()), dao.NewCommunityDao(MySQL.GetDB()))
 		postService = service.NewPostService(dao.Post.WithContext(context.Background()), dao.NewPostDao(MySQL.GetDB()))
 		authService = service.NewAuthService(dao.User.WithContext(context.Background()), dao.NewUserDao(MySQL.GetDB()))
-		voteService = service.NewVoteService(dao.Vote.WithContext(context.Background()))
+		voteService = service.NewVoteService(dao.Vote.WithContext(context.Background()), dao.NewVoteDao(MySQL.GetDB()))
 	})
 }
 
