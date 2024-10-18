@@ -32,7 +32,9 @@ func newComment(db *gorm.DB, opts ...gen.DOOption) comment {
 	_comment.Content = field.NewString(tableName, "content")
 	_comment.PostID = field.NewInt64(tableName, "post_id")
 	_comment.AuthorID = field.NewInt64(tableName, "author_id")
+	_comment.AuthorName = field.NewString(tableName, "author_name")
 	_comment.ParentID = field.NewInt64(tableName, "parent_id")
+	_comment.ReplyID = field.NewInt64(tableName, "reply_id")
 	_comment.Status = field.NewInt32(tableName, "status")
 	_comment.CreateTime = field.NewTime(tableName, "create_time")
 	_comment.UpdateTime = field.NewTime(tableName, "update_time")
@@ -52,7 +54,9 @@ type comment struct {
 	Content    field.String // 评论内容
 	PostID     field.Int64  // 评论所属的帖子ID
 	AuthorID   field.Int64  // 评论作者的用户ID
-	ParentID   field.Int64  // 父评论ID，为0表示原生评论，不为0表示回复评论
+	AuthorName field.String // 评论时的用户的名字
+	ParentID   field.Int64  // 该评论回复的评论ID，为0表示原生评论,即第一层的评论，不为0表示回复评论
+	ReplyID    field.Int64  // 父评论ID, 为0表示原生评论，不为0表示回复评论
 	Status     field.Int32  // 评论状态：1-正常，0-删除
 	CreateTime field.Time   // 评论创建时间，默认当前时间
 	UpdateTime field.Time   // 评论更新时间，每次更新时自动修改
@@ -78,7 +82,9 @@ func (c *comment) updateTableName(table string) *comment {
 	c.Content = field.NewString(table, "content")
 	c.PostID = field.NewInt64(table, "post_id")
 	c.AuthorID = field.NewInt64(table, "author_id")
+	c.AuthorName = field.NewString(table, "author_name")
 	c.ParentID = field.NewInt64(table, "parent_id")
+	c.ReplyID = field.NewInt64(table, "reply_id")
 	c.Status = field.NewInt32(table, "status")
 	c.CreateTime = field.NewTime(table, "create_time")
 	c.UpdateTime = field.NewTime(table, "update_time")
@@ -107,13 +113,15 @@ func (c *comment) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *comment) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 10)
+	c.fieldMap = make(map[string]field.Expr, 12)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["comment_id"] = c.CommentID
 	c.fieldMap["content"] = c.Content
 	c.fieldMap["post_id"] = c.PostID
 	c.fieldMap["author_id"] = c.AuthorID
+	c.fieldMap["author_name"] = c.AuthorName
 	c.fieldMap["parent_id"] = c.ParentID
+	c.fieldMap["reply_id"] = c.ReplyID
 	c.fieldMap["status"] = c.Status
 	c.fieldMap["create_time"] = c.CreateTime
 	c.fieldMap["update_time"] = c.UpdateTime

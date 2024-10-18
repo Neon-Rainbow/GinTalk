@@ -60,7 +60,7 @@ func GenerateToken[T int64 | string | uint](userID T) (accessToken string, refre
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		accessToken, err = f(uintUserID, AccessTokenName, time.Hour)
+		accessToken, err = f(uintUserID, AccessTokenName, time.Hour*24*7)
 		if err != nil {
 			errorChannel <- err
 			return
@@ -69,7 +69,7 @@ func GenerateToken[T int64 | string | uint](userID T) (accessToken string, refre
 
 	go func() {
 		defer wg.Done()
-		refreshToken, err = f(uintUserID, RefreshTokenName, time.Hour*24)
+		refreshToken, err = f(uintUserID, RefreshTokenName, time.Hour*24*7)
 		if err != nil {
 			errorChannel <- err
 			return

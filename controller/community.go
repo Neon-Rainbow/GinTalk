@@ -54,4 +54,5 @@ func (cc *CommunityHandler) CommunityDetailHandler(c *gin.Context) {
 		return
 	}
 	ResponseSuccess(c, community)
+	return
 }

@@ -1,3 +1,4 @@
+// Package container: 依赖注入容器，用于初始化 Service 实例。
 package container
 
 import (
@@ -13,20 +14,19 @@ var (
 	communityService service.CommunityServiceInterface
 	postService      service.PostServiceInterface
 	authService      service.AuthServiceInterface
+	voteService      service.VoteServiceInterface
 )
 
 // InitContainer 初始化容器
 func InitContainer() {
 	once.Do(func() {
-		// 获取数据库实例
-		dbInstance := MySQL.GetDB()
-
 		// 初始化 DAO 层
-		dao.SetDefault(dbInstance)
+		dao.SetDefault(MySQL.GetDB())
 
-		communityService = service.NewCommunityService(dao.Community.WithContext(context.Background()))
-		postService = service.NewPostService(dao.Post.WithContext(context.Background()))
-		authService = service.NewAuthService(dao.User.WithContext(context.Background()))
+		communityService = service.NewCommunityService(dao.Community.WithContext(context.Background()), dao.NewCommunityDao(MySQL.GetDB()))
+		postService = service.NewPostService(dao.Post.WithContext(context.Background()), dao.NewPostDao(MySQL.GetDB()))
+		authService = service.NewAuthService(dao.User.WithContext(context.Background()), dao.NewUserDao(MySQL.GetDB()))
+		voteService = service.NewVoteService(dao.Vote.WithContext(context.Background()))
 	})
 }
 
@@ -51,4 +51,11 @@ func GetAuthService() service.AuthServiceInterface {
 		panic("auth service is not initialized")
 	}
 	return authService
+}
+
+func GetVoteService() service.VoteServiceInterface {
+	if voteService == nil {
+		panic("vote service is not initialized")
+	}
+	return voteService
 }

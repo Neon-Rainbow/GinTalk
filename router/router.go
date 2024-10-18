@@ -44,6 +44,7 @@ func SetupRouter() *gin.Engine {
 	v1.Use(controller.JWTAuthMiddleware())
 	communityController := controller.NewCommunityController()
 	postController := controller.NewPostHandler()
+	voteController := controller.NewVoteHandler()
 	{
 		v1.GET("/community", communityController.CommunityHandler)
 		v1.GET("/community/:id", communityController.CommunityDetailHandler)
@@ -51,6 +52,12 @@ func SetupRouter() *gin.Engine {
 		v1.POST("/post", postController.CreatePostHandler)
 		v1.GET("/post", postController.GetPostListHandler)
 		v1.GET("/post/:id", postController.GetPostDetailHandler)
+
+		v1.POST("/vote", voteController.VoteHandler)
+		v1.DELETE("/vote", voteController.RevokeVoteHandler)
+		v1.GET("/vote/:id", voteController.GetVoteCountHandler)
+		v1.GET("/vote/user", voteController.MyVoteListHandler)
+		v1.GET("/vote/list", voteController.CheckUserVotedHandler)
 	}
 
 	r.NoRoute(func(c *gin.Context) {

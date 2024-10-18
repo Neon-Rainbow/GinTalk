@@ -19,7 +19,9 @@ type Comment struct {
 	Content    string         `gorm:"column:content;not null;comment:评论内容" json:"content"`                                      // 评论内容
 	PostID     int64          `gorm:"column:post_id;not null;comment:评论所属的帖子ID" json:"post_id"`                                 // 评论所属的帖子ID
 	AuthorID   int64          `gorm:"column:author_id;not null;comment:评论作者的用户ID" json:"author_id"`                             // 评论作者的用户ID
-	ParentID   int64          `gorm:"column:parent_id;not null;comment:父评论ID，为0表示原生评论，不为0表示回复评论" json:"parent_id"`              // 父评论ID，为0表示原生评论，不为0表示回复评论
+	AuthorName string         `gorm:"column:author_name;not null;comment:评论时的用户的名字" json:"author_name"`                         // 评论时的用户的名字
+	ParentID   int64          `gorm:"column:parent_id;not null;comment:该评论回复的评论ID，为0表示原生评论,即第一层的评论，不为0表示回复评论" json:"parent_id"` // 该评论回复的评论ID，为0表示原生评论,即第一层的评论，不为0表示回复评论
+	ReplyID    int64          `gorm:"column:reply_id;not null;comment:父评论ID, 为0表示原生评论，不为0表示回复评论" json:"reply_id"`               // 父评论ID, 为0表示原生评论，不为0表示回复评论
 	Status     int32          `gorm:"column:status;not null;default:1;comment:评论状态：1-正常，0-删除" json:"status"`                    // 评论状态：1-正常，0-删除
 	CreateTime time.Time      `gorm:"column:create_time;default:CURRENT_TIMESTAMP;comment:评论创建时间，默认当前时间" json:"create_time"`    // 评论创建时间，默认当前时间
 	UpdateTime time.Time      `gorm:"column:update_time;default:CURRENT_TIMESTAMP;comment:评论更新时间，每次更新时自动修改" json:"update_time"` // 评论更新时间，每次更新时自动修改

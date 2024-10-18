@@ -21,22 +21,22 @@ type CommunityServiceInterface interface {
 
 // CommunityService 是 CommunityServiceInterface 的实现
 type CommunityService struct {
-	communityDao dao.ICommunityDo
+	dao.ICommunityDo
+	dao.CommunityDaoInterface
 }
 
 // NewCommunityService 使用依赖注入初始化 CommunityService
-func NewCommunityService(communityDao dao.ICommunityDo) CommunityServiceInterface {
+func NewCommunityService(communityDao dao.ICommunityDo, communityDaoInterface dao.CommunityDaoInterface) CommunityServiceInterface {
 	return &CommunityService{
-		communityDao: communityDao,
+		ICommunityDo:          communityDao,
+		CommunityDaoInterface: communityDaoInterface,
 	}
 }
 
 // GetCommunityList 获取社区列表
 func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*VO.CommunityVO, *apiError.ApiError) {
 	// 使用 DAO 获取社区列表
-	communities, err := s.communityDao.WithContext(ctx).
-		Select(dao.Community.CommunityID, dao.Community.CommunityName).
-		Find()
+	communities, err := s.CommunityDaoInterface.GetCommunityList(ctx)
 
 	if err != nil {
 		return nil, &apiError.ApiError{
@@ -60,9 +60,7 @@ func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*VO.Communit
 // GetCommunityDetail 获取社区详情
 func (s *CommunityService) GetCommunityDetail(ctx context.Context, communityID int32) (*VO.CommunityDetailVO, *apiError.ApiError) {
 	// 使用 DAO 获取社区详情
-	community, err := s.communityDao.WithContext(ctx).
-		Where(dao.Community.CommunityID.Eq(communityID)).
-		First()
+	community, err := s.CommunityDaoInterface.GetCommunityDetail(ctx, communityID)
 
 	// 处理错误
 	if err != nil {
@@ -78,10 +76,5 @@ func (s *CommunityService) GetCommunityDetail(ctx context.Context, communityID i
 		}
 	}
 
-	// 构造响应数据
-	resp := &VO.CommunityDetailVO{
-		Community: community,
-	}
-
-	return resp, nil
+	return community, nil
 }

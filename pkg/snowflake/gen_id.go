@@ -34,7 +34,7 @@ func initSnowflake() {
 }
 
 // GetID 返回生成的唯一 ID（懒加载）
-func GetID() (uint, error) {
+func GetID() (int64, error) {
 	// 使用 sync.Once 确保 Snowflake 只初始化一次
 	once.Do(initSnowflake)
 
@@ -43,7 +43,7 @@ func GetID() (uint, error) {
 	}
 
 	id, err := sonyFlake.NextID()
-	return uint(id), err
+	return int64(id), err
 }
 
 // SetMachineID 设置机器 ID，必须在第一次调用 GetID 之前设置
