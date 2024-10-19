@@ -7,6 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var _ PostDaoInterface = (*PostDao)(nil)
+
 type PostDaoInterface interface {
 	CreatePost(ctx context.Context, post *model.Post) error
 	GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostDetail, error)
@@ -22,8 +24,22 @@ func NewPostDao(db *gorm.DB) PostDaoInterface {
 }
 
 func (pd *PostDao) CreatePost(ctx context.Context, post *model.Post) error {
-	sqlStr := `INSERT INTO post (post_id, title, content, author_id, community_id) VALUES (?, ?, ?, ?, ?)`
-	return pd.WithContext(ctx).Exec(sqlStr, post.PostID, post.Title, post.Content, post.AuthorID, post.CommunityID).Error
+	sqlStr1 := `INSERT INTO post (post_id, title, content, author_id, community_id) VALUES (?, ?, ?, ?, ?)`
+	sqlStr2 := `INSERT INTO content_votes (post_id) VALUES (?)`
+	tx := pd.WithContext(ctx).Begin()
+	err := tx.WithContext(ctx).Exec(sqlStr1, post.PostID, post.Title, post.Content, post.AuthorID, post.CommunityID).Error
+	if err != nil {
+		tx.Rollback()
+	}
+	err = tx.WithContext(ctx).Exec(sqlStr2, post.PostID).Error
+	if err != nil {
+		tx.Rollback()
+	}
+	err = tx.Commit().Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (pd *PostDao) GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostDetail, error) {

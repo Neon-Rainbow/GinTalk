@@ -55,9 +55,10 @@ func SetupRouter() *gin.Engine {
 
 		v1.POST("/vote", voteController.VoteHandler)
 		v1.DELETE("/vote", voteController.RevokeVoteHandler)
-		v1.GET("/vote/:id", voteController.GetVoteCountHandler)
+		v1.GET("/vote/:post_id", voteController.GetVoteCountHandler)
 		v1.GET("/vote/user", voteController.MyVoteListHandler)
 		v1.GET("/vote/list", voteController.CheckUserVotedHandler)
+		v1.GET("/vote/detail", voteController.GetPostVoteDetailHandler)
 	}
 
 	r.NoRoute(func(c *gin.Context) {

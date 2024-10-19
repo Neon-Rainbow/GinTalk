@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"GinTalk/DTO"
 	"GinTalk/model"
 	"context"
 	"gorm.io/gorm"
@@ -22,6 +23,8 @@ v=-1时，有两种情况
 	1.之前没投过票，现在要投反对票
 	2.之前投过赞成票，现在要改为反对票
 */
+
+var _ VoteDaoInterface = (*VoteDao)(nil)
 
 type VoteDaoInterface interface {
 	// VoteCase1 之前没投过票，现在要投赞成票
@@ -66,6 +69,9 @@ type VoteDaoInterface interface {
 
 	// CheckUserVoted 检查用户是否投过票
 	CheckUserVoted(ctx context.Context, postID []int64, userID int64) ([]model.Vote, error)
+
+	// GetPostVoteDetail 获取帖子的投票详情
+	GetPostVoteDetail(ctx context.Context, postID int64, pageNum int, pageSize int) ([]DTO.UserVoteDetailDTO, error)
 }
 
 type VoteDao struct {
@@ -83,7 +89,7 @@ func (vd *VoteDao) VoteCase1(ctx context.Context, postID int64, userID int64) er
 
 func (vd *VoteDao) ContentVoteCase1(ctx context.Context, postID int64) error {
 	sqlStr := `UPDATE content_votes SET up = up + 1 WHERE post_id = ? AND delete_time = 0`
-	return vd.WithContext(ctx).Exec(sqlStr, postID).Error
+	return vd.Exec(sqlStr, postID).Error
 }
 
 func (vd *VoteDao) VoteCase2(ctx context.Context, postID int64, userID int64) error {
@@ -93,7 +99,7 @@ func (vd *VoteDao) VoteCase2(ctx context.Context, postID int64, userID int64) er
 
 func (vd *VoteDao) ContentVoteCase2(ctx context.Context, postID int64) error {
 	sqlStr := `UPDATE content_votes SET up = up + 1, down = down - 1 WHERE post_id = ? AND delete_time = 0`
-	return vd.WithContext(ctx).Exec(sqlStr, postID).Error
+	return vd.Exec(sqlStr, postID).Error
 }
 
 func (vd *VoteDao) VoteCase3(ctx context.Context, postID int64, userID int64) error {
@@ -103,7 +109,7 @@ func (vd *VoteDao) VoteCase3(ctx context.Context, postID int64, userID int64) er
 
 func (vd *VoteDao) ContentVoteCase3(ctx context.Context, postID int64) error {
 	sqlStr := `UPDATE content_votes SET up = up - 1 WHERE post_id = ? AND delete_time = 0`
-	return vd.WithContext(ctx).Exec(sqlStr, postID).Error
+	return vd.Exec(sqlStr, postID).Error
 }
 
 func (vd *VoteDao) VoteCase4(ctx context.Context, postID int64, userID int64) error {
@@ -113,7 +119,7 @@ func (vd *VoteDao) VoteCase4(ctx context.Context, postID int64, userID int64) er
 
 func (vd *VoteDao) ContentVoteCase4(ctx context.Context, postID int64) error {
 	sqlStr := `UPDATE content_votes SET down = down - 1 WHERE post_id = ? AND delete_time = 0`
-	return vd.WithContext(ctx).Exec(sqlStr, postID).Error
+	return vd.Exec(sqlStr, postID).Error
 }
 
 func (vd *VoteDao) VoteCase5(ctx context.Context, postID int64, userID int64) error {
@@ -123,7 +129,7 @@ func (vd *VoteDao) VoteCase5(ctx context.Context, postID int64, userID int64) er
 
 func (vd *VoteDao) ContentVoteCase5(ctx context.Context, postID int64) error {
 	sqlStr := `UPDATE content_votes SET down = down + 1 WHERE post_id = ? AND delete_time = 0`
-	return vd.WithContext(ctx).Exec(sqlStr, postID).Error
+	return vd.Exec(sqlStr, postID).Error
 }
 
 func (vd *VoteDao) VoteCase6(ctx context.Context, postID int64, userID int64) error {
@@ -133,7 +139,7 @@ func (vd *VoteDao) VoteCase6(ctx context.Context, postID int64, userID int64) er
 
 func (vd *VoteDao) ContentVoteCase6(ctx context.Context, postID int64) error {
 	sqlStr := `UPDATE content_votes SET up = up - 1, down = down + 1 WHERE post_id = ? AND delete_time = 0`
-	return vd.WithContext(ctx).Exec(sqlStr, postID).Error
+	return vd.Exec(sqlStr, postID).Error
 }
 
 func (vd *VoteDao) GetVoteRecord(ctx context.Context, postID int64, userID int64) (int, error) {
@@ -183,7 +189,21 @@ func (vd *VoteDao) GetContentVoteCount(ctx context.Context, postID int64) (int64
 
 func (vd *VoteDao) CheckUserVoted(ctx context.Context, postID []int64, userID int64) ([]model.Vote, error) {
 	var votes []model.Vote
-	sqlStr := `SELECT post_id, user_id, vote FROM vote WHERE post_id IN (?) AND user_id = ? AND delete_time IS NULL`
+	sqlStr := `SELECT post_id, user_id, vote FROM vote WHERE post_id IN (?) AND user_id = ? AND delete_time = 0`
 	err := vd.WithContext(ctx).Raw(sqlStr, postID, userID).Scan(&votes).Error
+	return votes, err
+}
+
+func (vd *VoteDao) GetPostVoteDetail(ctx context.Context, postID int64, pageNum int, pageSize int) ([]DTO.UserVoteDetailDTO, error) {
+	var votes []DTO.UserVoteDetailDTO
+	sqlStr := `
+		SELECT post_id, user.user_id, vote, username
+		FROM vote
+		LEFT JOIN user ON vote.user_id = user.id
+		WHERE post_id = ? AND vote.delete_time = 0
+		LIMIT ?
+		OFFSET ?
+`
+	err := vd.WithContext(ctx).Raw(sqlStr, postID, pageSize, (pageNum-1)*pageSize).Scan(&votes).Error
 	return votes, err
 }

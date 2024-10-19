@@ -18,31 +18,31 @@ const (
 )
 
 type MyClaims struct {
-	UserID    uint   `json:"user_id"`
+	UserID    int64  `json:"user_id"`
 	TokenType string `json:"token_type"`
 	jwt.RegisteredClaims
 }
 
 // GenerateToken 生成token
 func GenerateToken[T int64 | string | uint](userID T) (accessToken string, refreshToken string, err error) {
-	var uintUserID uint
+	var int64UserID int64
 	switch v := any(userID).(type) {
 	case uint:
-		uintUserID = uint(v)
+		int64UserID = int64(v)
 	case int64:
-		uintUserID = uint(v)
+		int64UserID = v
 	case string:
 		// 尝试将 string 转为 uint
 		parsedID, err := strconv.ParseUint(v, 10, 32) // 假设 uint 是 32 位
 		if err != nil {
 			return "", "", fmt.Errorf("invalid userID format, could not convert to uint: %v", err)
 		}
-		uintUserID = uint(parsedID)
+		int64UserID = int64(parsedID)
 	default:
 		return "", "", fmt.Errorf("unsupported userID type")
 	}
 
-	f := func(userID uint, tokenType string, validTime time.Duration) (string, error) {
+	f := func(userID int64, tokenType string, validTime time.Duration) (string, error) {
 		c := MyClaims{
 			UserID:    userID,
 			TokenType: tokenType,
@@ -60,7 +60,7 @@ func GenerateToken[T int64 | string | uint](userID T) (accessToken string, refre
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		accessToken, err = f(uintUserID, AccessTokenName, time.Hour*24*7)
+		accessToken, err = f(int64UserID, AccessTokenName, time.Hour*24*7)
 		if err != nil {
 			errorChannel <- err
 			return
@@ -69,7 +69,7 @@ func GenerateToken[T int64 | string | uint](userID T) (accessToken string, refre
 
 	go func() {
 		defer wg.Done()
-		refreshToken, err = f(uintUserID, RefreshTokenName, time.Hour*24*7)
+		refreshToken, err = f(int64UserID, RefreshTokenName, time.Hour*24*7)
 		if err != nil {
 			errorChannel <- err
 			return

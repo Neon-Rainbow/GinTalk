@@ -1,6 +1,7 @@
 package service
 
 import (
+	"GinTalk/DTO"
 	"GinTalk/dao"
 	"GinTalk/model"
 	"GinTalk/pkg/apiError"
@@ -18,6 +19,7 @@ type VoteServiceInterface interface {
 	MyVoteList(ctx context.Context, userID int64, pageNum int, pageSize int) ([]int64, *apiError.ApiError)
 	GetVoteCount(ctx context.Context, postID int64) (int64, int64, *apiError.ApiError)
 	CheckUserVoted(ctx context.Context, postID []int64, userID int64) ([]model.Vote, *apiError.ApiError)
+	GetPostVoteDetail(ctx context.Context, postID int64, pageNum, pageSize int) ([]*DTO.UserVoteDetailDTO, *apiError.ApiError)
 }
 
 type VoteService struct {
@@ -57,6 +59,12 @@ func (v *VoteService) Vote(ctx context.Context, postID int64, userID int64, vote
 		}
 	}
 	caseNum := 0
+	if voteRecord == voteType {
+		return &apiError.ApiError{
+			Code: code.InvalidParam,
+			Msg:  "请勿重复投票",
+		}
+	}
 
 	// 根据投票类型和先前的投票记录，计算投票数的变化量
 	if voteType == 1 {
@@ -135,6 +143,21 @@ func (v *VoteService) CheckUserVoted(ctx context.Context, postID []int64, userID
 		}
 	}
 	return votes, nil
+}
+
+func (v *VoteService) GetPostVoteDetail(ctx context.Context, postID int64, pageNum, pageSize int) ([]*DTO.UserVoteDetailDTO, *apiError.ApiError) {
+	voteDetails, err := v.VoteDaoInterface.GetPostVoteDetail(ctx, postID, pageNum, pageSize)
+	if err != nil {
+		return nil, &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  fmt.Sprintf("查询投票详情失败: %v", err),
+		}
+	}
+	resp := make([]*DTO.UserVoteDetailDTO, len(voteDetails))
+	for i, voteDetail := range voteDetails {
+		resp[i] = &voteDetail
+	}
+	return resp, nil
 }
 
 func NewVoteService(voteDao dao.IVoteDo, voteDaoInterface dao.VoteDaoInterface) VoteServiceInterface {

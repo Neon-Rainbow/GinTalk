@@ -47,7 +47,7 @@ func (as *AuthService) LoginService(ctx context.Context, dto *DTO.LoginRequestDT
 			Msg:  "密码错误",
 		}
 	}
-	accessToken, refreshToken, err := jwt.GenerateToken(user.ID)
+	accessToken, refreshToken, err := jwt.GenerateToken(user.UserID)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -57,7 +57,7 @@ func (as *AuthService) LoginService(ctx context.Context, dto *DTO.LoginRequestDT
 	return &DTO.LoginResponseDTO{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		UserID:       user.ID,
+		UserID:       user.UserID,
 		Username:     user.Username,
 	}, nil
 }

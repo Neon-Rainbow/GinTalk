@@ -6,6 +6,7 @@ import (
 	"GinTalk/pkg/code"
 	"GinTalk/service"
 	"github.com/gin-gonic/gin"
+	"strconv"
 )
 
 type VoteHandler struct {
@@ -48,35 +49,14 @@ func (vh *VoteHandler) VoteHandler(c *gin.Context) {
 }
 
 func (vh *VoteHandler) RevokeVoteHandler(c *gin.Context) {
-	var vote DTO.VoteDTO
-	if err := c.ShouldBindBodyWithJSON(&vote); err != nil {
-		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
-		return
-	}
-
-	userID, err := getCurrentUserID(c)
-	if err != nil {
-		ResponseErrorWithMsg(c, code.InvalidAuth, err.Error())
-		return
-	}
-
-	if userID != vote.UserID {
-		ResponseErrorWithMsg(c, code.InvalidParam, "用户 ID 不匹配")
-		return
-	}
-
-	apiError := vh.VoteServiceInterface.RevokeVote(c.Request.Context(), vote.PostID, userID)
-	if apiError != nil {
-		ResponseErrorWithApiError(c, apiError)
-		return
-	}
-	ResponseSuccess(c, nil)
+	// Vote 函数中已经处理了撤销投票的请求,因此不需要再使用该接口
+	vh.VoteHandler(c)
 	return
 }
 
 func (vh *VoteHandler) MyVoteListHandler(c *gin.Context) {
 	var myVoteList DTO.MyVoteListDTO
-	if err := c.ShouldBindQuery(&myVoteList); err != nil {
+	if err := c.ShouldBindBodyWithJSON(&myVoteList); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
@@ -90,6 +70,12 @@ func (vh *VoteHandler) MyVoteListHandler(c *gin.Context) {
 		ResponseErrorWithMsg(c, code.InvalidParam, "用户 ID 不匹配")
 		return
 	}
+	if myVoteList.PageNum == 0 {
+		myVoteList.PageNum = 1
+	}
+	if myVoteList.PageSize == 0 {
+		myVoteList.PageSize = 10
+	}
 
 	voteList, apiError := vh.VoteServiceInterface.MyVoteList(c.Request.Context(), myVoteList.UserID, myVoteList.PageNum, myVoteList.PageSize)
 	if apiError != nil {
@@ -101,13 +87,13 @@ func (vh *VoteHandler) MyVoteListHandler(c *gin.Context) {
 }
 
 func (vh *VoteHandler) GetVoteCountHandler(c *gin.Context) {
-	var voteCount DTO.VoteCountDTO
-	if err := c.ShouldBindQuery(&voteCount); err != nil {
+	postID, err := strconv.Atoi(c.Param("post_id"))
+	if err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
 
-	upCount, downCount, apiError := vh.VoteServiceInterface.GetVoteCount(c.Request.Context(), voteCount.PostID)
+	upCount, downCount, apiError := vh.VoteServiceInterface.GetVoteCount(c.Request.Context(), int64(postID))
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -138,6 +124,48 @@ func (vh *VoteHandler) CheckUserVotedHandler(c *gin.Context) {
 	}
 
 	voteList, apiError := vh.VoteServiceInterface.CheckUserVoted(c.Request.Context(), postIds.PostID, userID)
+	if apiError != nil {
+		ResponseErrorWithApiError(c, apiError)
+		return
+	}
+
+	type resp struct {
+		PostID int64 `json:"post_id"`
+		Vote   int   `json:"vote"`
+	}
+	var respList []gin.H
+
+	for _, vote := range voteList {
+		respList = append(respList, gin.H{
+			"post_id": vote.PostID,
+			"vote":    vote.Vote,
+		})
+	}
+
+	ResponseSuccess(c, respList)
+	return
+}
+
+func (vh *VoteHandler) GetPostVoteDetailHandler(c *gin.Context) {
+	type PostID struct {
+		PostID   int64 `form:"post_id" binding:"required"`
+		pageNum  int   `form:"page_num"`
+		pageSize int   `form:"page_size"`
+	}
+	var postIds PostID
+	if err := c.ShouldBindQuery(postIds); err != nil {
+		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
+		return
+	}
+	if postIds.pageNum == 0 {
+		postIds.pageNum = 1
+	}
+
+	if postIds.pageSize == 0 {
+		postIds.pageSize = 10
+	}
+
+	voteList, apiError := vh.VoteServiceInterface.GetPostVoteDetail(c.Request.Context(), postIds.PostID, postIds.pageNum, postIds.pageSize)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return

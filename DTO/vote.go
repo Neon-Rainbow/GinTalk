@@ -18,5 +18,12 @@ type CreateVoteDTO struct {
 }
 
 type VoteCountDTO struct {
-	PostID int64 `json:"post_id" binding:"required"`
+	PostID int64 `json:"post_id" form:"post_id" binding:"required"`
+}
+
+type UserVoteDetailDTO struct {
+	UserID   int64  `json:"user_id"`
+	PostID   int64  `json:"post_id"`
+	Username string `json:"username"`
+	Vote     int    `json:"vote"`
 }

@@ -21,8 +21,8 @@ func NewUserDao(db *gorm.DB) UserDaoInterface {
 }
 
 func (ud *UserDao) CreateUser(ctx context.Context, user *model.User) error {
-	sqlStr := `INSERT INTO user (user_id, username, password) VALUES (?, ?, ?)`
-	return ud.WithContext(ctx).Exec(sqlStr, user.UserID, user.Username, user.Password).Error
+	sqlStr := `INSERT INTO user (user_id, username, password, email, gender) VALUES (?, ?, ?, ?, ?)`
+	return ud.WithContext(ctx).Exec(sqlStr, user.UserID, user.Username, user.Password, user.Email, user.Gender).Error
 }
 
 func (ud *UserDao) FindUserByUsername(ctx context.Context, username string) (*model.User, error) {
