@@ -33,7 +33,7 @@ func newCommunity(db *gorm.DB, opts ...gen.DOOption) community {
 	_community.Introduction = field.NewString(tableName, "introduction")
 	_community.CreateTime = field.NewTime(tableName, "create_time")
 	_community.UpdateTime = field.NewTime(tableName, "update_time")
-	_community.DeleteTime = field.NewField(tableName, "delete_time")
+	_community.DeleteTime = field.NewInt(tableName, "delete_time")
 
 	_community.fillFieldMap()
 
@@ -50,7 +50,7 @@ type community struct {
 	Introduction  field.String
 	CreateTime    field.Time
 	UpdateTime    field.Time
-	DeleteTime    field.Field
+	DeleteTime    field.Int
 
 	fieldMap map[string]field.Expr
 }
@@ -73,7 +73,7 @@ func (c *community) updateTableName(table string) *community {
 	c.Introduction = field.NewString(table, "introduction")
 	c.CreateTime = field.NewTime(table, "create_time")
 	c.UpdateTime = field.NewTime(table, "update_time")
-	c.DeleteTime = field.NewField(table, "delete_time")
+	c.DeleteTime = field.NewInt(table, "delete_time")
 
 	c.fillFieldMap()
 

@@ -9,9 +9,9 @@ import (
 
 type CommentDaoInterface interface {
 	// GetTopComments 获取顶层评论
-	GetTopComments(ctx context.Context, postID int64, pageSize, pageNum int) ([]*model.Comment, error)
+	GetTopComments(ctx context.Context, postID int64, pageSize, pageNum int) ([]model.Comment, error)
 	// GetSubComments 获取某一个顶层评论的子评论
-	GetSubComments(ctx context.Context, postID, parentID int64, pageSize, pageNum int) ([]*model.Comment, error)
+	GetSubComments(ctx context.Context, postID, parentID int64, pageSize, pageNum int) ([]model.Comment, error)
 	// GetCommentByID 根据评论 ID 获取评论
 	GetCommentByID(ctx context.Context, commentID int64) (*model.Comment, error)
 	// CreateComment 创建评论
@@ -39,8 +39,8 @@ func NewCommentDao(db *gorm.DB) CommentDaoInterface {
 }
 
 // GetTopComments 获取顶层评论
-func (cd *CommentDao) GetTopComments(ctx context.Context, postID int64, pageSize, pageNum int) ([]*model.Comment, error) {
-	var comment []*model.Comment
+func (cd *CommentDao) GetTopComments(ctx context.Context, postID int64, pageSize, pageNum int) ([]model.Comment, error) {
+	var comment []model.Comment
 	sqlStr := `
 		SELECT * 
 		FROM comment
@@ -48,12 +48,13 @@ func (cd *CommentDao) GetTopComments(ctx context.Context, postID int64, pageSize
 		WHERE comment.post_id = ? AND comment.status = 1 AND comment.delete_time = 0 AND comment_relation.delete_time = 0 AND comment_relation.parent_id = 0
 		ORDER BY comment.create_time DESC`
 	err := cd.WithContext(ctx).Raw(sqlStr, postID).Scan(&comment).Error
+
 	return comment, err
 }
 
 // GetSubComments 获取某一个顶层评论的子评论
-func (cd *CommentDao) GetSubComments(ctx context.Context, postID, parentID int64, pageSize, pageNum int) ([]*model.Comment, error) {
-	var comments []*model.Comment
+func (cd *CommentDao) GetSubComments(ctx context.Context, postID, parentID int64, pageSize, pageNum int) ([]model.Comment, error) {
+	var comments []model.Comment
 	sqlStr := `
 		SELECT * 
 		FROM comment
@@ -62,6 +63,7 @@ func (cd *CommentDao) GetSubComments(ctx context.Context, postID, parentID int64
 		ORDER BY comment.create_time DESC
 		LIMIT ? OFFSET ?`
 	err := cd.WithContext(ctx).Raw(sqlStr, postID, parentID, pageSize, (pageNum-1)*pageSize).Scan(&comments).Error
+
 	return comments, err
 }
 
@@ -81,7 +83,7 @@ func (cd *CommentDao) CreateComment(ctx context.Context, comment *model.Comment,
 	sqlStrCreateComment := `
 		INSERT INTO comment (comment_id, content, post_id, author_id, author_name)
 			VALUES (?, ?, ?, ?, ?)`
-	err := tx.Raw(sqlStrCreateComment, comment.CommentID, comment.Content, comment.PostID, comment.AuthorID, comment.AuthorName).Error
+	err := tx.Exec(sqlStrCreateComment, comment.CommentID, comment.Content, comment.PostID, comment.AuthorID, comment.AuthorName).Error
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -89,7 +91,7 @@ func (cd *CommentDao) CreateComment(ctx context.Context, comment *model.Comment,
 	sqlStrCreateRelation := `
 		INSERT INTO comment_relation (post_id, comment_id, parent_id, reply_id) 
 			VALUES (?, ?, ?, ?)`
-	err = tx.Raw(sqlStrCreateRelation, comment.PostID, comment.CommentID, parentID, replyID).Error
+	err = tx.Exec(sqlStrCreateRelation, comment.PostID, comment.CommentID, parentID, replyID).Error
 	if err != nil {
 		tx.Rollback()
 		return err

@@ -6,6 +6,7 @@ import (
 	"GinTalk/model"
 	"GinTalk/pkg/apiError"
 	"GinTalk/pkg/code"
+	"GinTalk/pkg/snowflake"
 	"context"
 )
 
@@ -13,7 +14,7 @@ type CommentServiceInterface interface {
 	GetTopComments(ctx context.Context, postID int64, pageSize, pageNum int) ([]DTO.Comment, *apiError.ApiError)
 	GetSubComments(ctx context.Context, postID, parentID int64, pageSize, pageNum int) ([]DTO.Comment, *apiError.ApiError)
 	GetCommentByID(ctx context.Context, commentID int64) (*DTO.Comment, *apiError.ApiError)
-	CreateComment(ctx context.Context, comment *DTO.Comment, username string, replyID int64, parentID int64) *apiError.ApiError
+	CreateComment(ctx context.Context, comment *DTO.CreateCommentRequest) *apiError.ApiError
 	UpdateComment(ctx context.Context, comment *DTO.Comment) *apiError.ApiError
 	DeleteComment(ctx context.Context, commentID int64) *apiError.ApiError
 	GetCommentCount(ctx context.Context, postID int64) (int64, *apiError.ApiError)
@@ -91,14 +92,17 @@ func (cs *CommentService) GetCommentByID(ctx context.Context, commentID int64) (
 	return resp, nil
 }
 
-func (cs *CommentService) CreateComment(ctx context.Context, comment *DTO.Comment, username string, replyID int64, parentID int64) *apiError.ApiError {
-	err := cs.CommentDaoInterface.CreateComment(ctx, &model.Comment{
-		CommentID:  comment.CommentID,
+func (cs *CommentService) CreateComment(ctx context.Context, comment *DTO.CreateCommentRequest) *apiError.ApiError {
+	id, _ := snowflake.GetID()
+	commentModel := &model.Comment{
+		CommentID:  id,
 		PostID:     comment.PostID,
 		AuthorID:   comment.AuthorID,
-		AuthorName: username,
+		AuthorName: comment.AuthorName,
 		Content:    comment.Content,
-	}, replyID, parentID)
+		Status:     1,
+	}
+	err := cs.CommentDaoInterface.CreateComment(ctx, commentModel, comment.ReplyID, comment.ParentID)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,

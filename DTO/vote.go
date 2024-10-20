@@ -1,10 +1,10 @@
 package DTO
 
 type VoteDTO struct {
-	ID      int64 `json:"id" binding:"required"`
-	VoteFor int   `json:"vote_for" binding:"required"`
-	UserID  int64 `json:"user_id" binding:"required"`
-	Vote    int   `json:"vote"`
+	ID      int64 `json:"id" binding:"required"`       // 帖子ID或评论ID
+	VoteFor int   `json:"vote_for" binding:"required"` // 1: 帖子 2: 评论
+	UserID  int64 `json:"user_id" binding:"required"`  // 用户ID
+	Vote    int   `json:"vote"`                        // -1: 踩 0: 取消 1: 赞
 }
 
 type MyVoteListDTO struct {

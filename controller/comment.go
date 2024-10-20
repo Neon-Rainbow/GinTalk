@@ -18,6 +18,15 @@ func NewCommentController() CommentController {
 }
 
 // GetTopComments 获取主评论
+// @Summary 获取主评论
+// @Tags 评论
+// @Accept json
+// @Produce json
+// @Param post_id query string true "帖子ID"
+// @Param page_size query string true "每页数量"
+// @Param page_num query string true "页码"
+// @Success 200 {object} CommentListResponse
+// @Router /api/v1/comment/top [get]
 func (cc *CommentController) GetTopComments(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_postID := c.Query("post_id")
@@ -52,6 +61,16 @@ func (cc *CommentController) GetTopComments(c *gin.Context) {
 }
 
 // GetSubComments 获取子评论
+// @Summary 获取子评论
+// @Tags 评论
+// @Accept json
+// @Produce json
+// @Param post_id query string true "帖子ID"
+// @Param parent_id query string true "父评论ID"
+// @Param page_size query string true "每页数量"
+// @Param page_num query string true "页码"
+// @Success 200 {object} CommentListResponse
+// @Router /api/v1/comment/sub [get]
 func (cc *CommentController) GetSubComments(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_postID := c.Query("post_id")
@@ -93,6 +112,13 @@ func (cc *CommentController) GetSubComments(c *gin.Context) {
 }
 
 // GetCommentByID 获取评论
+// @Summary 获取评论
+// @Tags 评论
+// @Accept json
+// @Produce json
+// @Param comment_id query string true "评论ID"
+// @Success 200 {object} Comment
+// @Router /api/v1/comment [get]
 func (cc *CommentController) GetCommentByID(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_commentID := c.Query("comment_id")
@@ -116,19 +142,24 @@ func (cc *CommentController) GetCommentByID(c *gin.Context) {
 // CreateComment 创建评论
 func (cc *CommentController) CreateComment(c *gin.Context) {
 	// 1. 从请求中获取参数
-	var comment DTO.CommentRequest
+	var comment DTO.CreateCommentRequest
 	if err := c.ShouldBindJSON(&comment); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, "参数错误")
 		return
 	}
 	username, _ := c.Get(ContextUsernameKey)
+	comment.AuthorName = username.(string)
 	// 2. 参数校验
 	if comment.Content == "" {
 		ResponseErrorWithMsg(c, code.InvalidParam, "content 参数错误")
 		return
 	}
+
+	userID, _ := c.Get(ContextUserIDKey)
+	comment.AuthorID = userID.(int64)
+
 	// 3. 调用 service 获取数据
-	apiError := cc.CommentService.CreateComment(c, comment.Comment, username.(string), comment.ReplyID, comment.ParentID)
+	apiError := cc.CommentService.CreateComment(c, &comment)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -259,4 +290,24 @@ func (cc *CommentController) GetCommentCountByUserID(c *gin.Context) {
 	}
 	//4. 返回响应
 	ResponseSuccess(c, commentCount)
+}
+
+func (cc *CommentController) GetCommentByCommentID(c *gin.Context) {
+	// 1. 从请求中获取参数
+	_commentID := c.Query("comment_id")
+
+	// 2. 参数校验
+	commentID, err := strconv.Atoi(_commentID)
+	if err != nil {
+		ResponseErrorWithMsg(c, code.InvalidParam, "comment_id 参数错误")
+		return
+	}
+	//3. 调用 service 获取数据
+	comment, apiError := cc.CommentService.GetCommentByID(c, int64(commentID))
+	if apiError != nil {
+		ResponseErrorWithApiError(c, apiError)
+		return
+	}
+	//4. 返回响应
+	ResponseSuccess(c, comment)
 }

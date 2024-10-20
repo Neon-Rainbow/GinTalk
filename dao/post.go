@@ -26,6 +26,7 @@ func NewPostDao(db *gorm.DB) PostDaoInterface {
 func (pd *PostDao) CreatePost(ctx context.Context, post *model.Post) error {
 	sqlStr1 := `INSERT INTO post (post_id, title, content, author_id, community_id) VALUES (?, ?, ?, ?, ?)`
 	sqlStr2 := `INSERT INTO content_votes (post_id) VALUES (?)`
+
 	tx := pd.WithContext(ctx).Begin()
 	err := tx.WithContext(ctx).Exec(sqlStr1, post.PostID, post.Title, post.Content, post.AuthorID, post.CommunityID).Error
 	if err != nil {

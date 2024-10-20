@@ -183,6 +183,8 @@ func NewVoteService(voteDao dao.IVoteDo, voteDaoInterface dao.VoteDaoInterface) 
 }
 
 func updatePostVoteCount(ctx context.Context, v *VoteService, id int64, voteFor int, caseNum int) {
+	ctx = context.Background()
+
 	var maxRetries = 3          // 最大重试次数
 	var delay = 2 * time.Second // 重试间隔时间
 	var err error

@@ -112,8 +112,9 @@ CREATE TABLE `comment_relation`
     `update_time` timestamp  NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '评论关系更新时间，每次更新时自动修改',
     `delete_time` bigint  NULL DEFAULT 0 COMMENT '逻辑删除时间，NULL表示未删除',
     PRIMARY KEY (`comment_id`),
-    UNIQUE INDEX `idx_post_id_parent_id_delete_time` (`post_id`, `parent_id`, `delete_time`),
-    UNIQUE INDEX `idx_post_id_reply_id_delete_time` (`post_id`, `comment_id`, `delete_time`)
+    INDEX `idx_post_id_parent_id_delete_time` (`post_id`, `parent_id`, `delete_time`),
+    INDEX `idx_post_id_reply_id_delete_time` (`post_id`, `comment_id`, `delete_time`),
+    UNIQUE INDEX `idx_post_id_comment_id_delete_time` (`comment_id`, `delete_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci;
@@ -145,7 +146,7 @@ CREATE TABLE `vote`
     `delete_time` bigint  NULL DEFAULT 0 COMMENT '逻辑删除时间，NULL表示未删除',
     PRIMARY KEY (`id`),
     UNIQUE INDEX `idx_post_id_user_id_delete_time` (`post_id`, `user_id`, `delete_time`),
-    UNIQUE INDEX `idx_comment_id_user_id_delete_time` (`comment_id`, `user_id`, `delete_time`)
+    INDEX `idx_comment_id_user_id_delete_time` (`comment_id`, `user_id`, `delete_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci;

@@ -25,14 +25,10 @@ func (ph *PostHandler) CreatePostHandler(c *gin.Context) {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-
-	userID, err := getCurrentUserID(c)
-	if err != nil {
-		ResponseErrorWithMsg(c, code.InvalidAuth, err.Error())
+	if !isUserIDMatch(c, post.AuthorId) {
+		ResponseErrorWithMsg(c, code.InvalidAuth, "无权限操作")
 		return
 	}
-
-	post.AuthorId = userID
 
 	apiError := ph.PostServiceInterface.CreatePost(c.Request.Context(), &post)
 	if apiError != nil {
@@ -70,7 +66,7 @@ func (ph *PostHandler) GetPostDetailHandler(c *gin.Context) {
 // GetPostDetailHandler 获取帖子详情
 func getPageInfo(c *gin.Context) (pageNum int, pageSize int) {
 	var err error
-	_n, _s := c.Query("PageNum"), c.Query("PageSize")
+	_n, _s := c.Query("page_num"), c.Query("page_size")
 	pageNum, err = strconv.Atoi(_n)
 	if err != nil || pageNum <= 0 {
 		pageNum = 1

@@ -32,7 +32,7 @@ func newCommentVote(db *gorm.DB, opts ...gen.DOOption) commentVote {
 	_commentVote.Down = field.NewInt32(tableName, "down")
 	_commentVote.CreateTime = field.NewTime(tableName, "create_time")
 	_commentVote.UpdateTime = field.NewTime(tableName, "update_time")
-	_commentVote.DeleteTime = field.NewField(tableName, "delete_time")
+	_commentVote.DeleteTime = field.NewInt(tableName, "delete_time")
 
 	_commentVote.fillFieldMap()
 
@@ -48,7 +48,7 @@ type commentVote struct {
 	Down       field.Int32 // 踩数
 	CreateTime field.Time  // 投票创建时间，默认当前时间
 	UpdateTime field.Time  // 投票更新时间，每次更新时自动修改
-	DeleteTime field.Field // 逻辑删除时间，NULL表示未删除
+	DeleteTime field.Int   // 逻辑删除时间，NULL表示未删除
 
 	fieldMap map[string]field.Expr
 }
@@ -70,7 +70,7 @@ func (c *commentVote) updateTableName(table string) *commentVote {
 	c.Down = field.NewInt32(table, "down")
 	c.CreateTime = field.NewTime(table, "create_time")
 	c.UpdateTime = field.NewTime(table, "update_time")
-	c.DeleteTime = field.NewField(table, "delete_time")
+	c.DeleteTime = field.NewInt(table, "delete_time")
 
 	c.fillFieldMap()
 

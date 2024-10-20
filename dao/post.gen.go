@@ -36,7 +36,7 @@ func newPost(db *gorm.DB, opts ...gen.DOOption) post {
 	_post.Status = field.NewInt32(tableName, "status")
 	_post.CreateTime = field.NewTime(tableName, "create_time")
 	_post.UpdateTime = field.NewTime(tableName, "update_time")
-	_post.DeleteTime = field.NewField(tableName, "delete_time")
+	_post.DeleteTime = field.NewInt(tableName, "delete_time")
 
 	_post.fillFieldMap()
 
@@ -57,7 +57,7 @@ type post struct {
 	Status      field.Int32  // 帖子状态：1-正常，0-隐藏或删除
 	CreateTime  field.Time   // 帖子创建时间，默认当前时间
 	UpdateTime  field.Time   // 帖子更新时间，每次更新时自动修改
-	DeleteTime  field.Field  // 逻辑删除时间，NULL表示未删除
+	DeleteTime  field.Int    // 逻辑删除时间，NULL表示未删除
 
 	fieldMap map[string]field.Expr
 }
@@ -83,7 +83,7 @@ func (p *post) updateTableName(table string) *post {
 	p.Status = field.NewInt32(table, "status")
 	p.CreateTime = field.NewTime(table, "create_time")
 	p.UpdateTime = field.NewTime(table, "update_time")
-	p.DeleteTime = field.NewField(table, "delete_time")
+	p.DeleteTime = field.NewInt(table, "delete_time")
 
 	p.fillFieldMap()
 

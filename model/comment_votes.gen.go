@@ -6,20 +6,18 @@ package model
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 const TableNameCommentVote = "comment_votes"
 
 // CommentVote mapped from table <comment_votes>
 type CommentVote struct {
-	CommentID  int64          `gorm:"column:comment_id;not null;comment:投票所属的评论ID" json:"comment_id"`                           // 投票所属的评论ID
-	Up         int32          `gorm:"column:up;not null;comment:赞数" json:"up"`                                                  // 赞数
-	Down       int32          `gorm:"column:down;not null;comment:踩数" json:"down"`                                              // 踩数
-	CreateTime time.Time      `gorm:"column:create_time;default:CURRENT_TIMESTAMP;comment:投票创建时间，默认当前时间" json:"create_time"`    // 投票创建时间，默认当前时间
-	UpdateTime time.Time      `gorm:"column:update_time;default:CURRENT_TIMESTAMP;comment:投票更新时间，每次更新时自动修改" json:"update_time"` // 投票更新时间，每次更新时自动修改
-	DeleteTime gorm.DeletedAt `gorm:"column:delete_time;comment:逻辑删除时间，NULL表示未删除" json:"delete_time"`                           // 逻辑删除时间，NULL表示未删除
+	CommentID  int64     `gorm:"column:comment_id;not null;comment:投票所属的评论ID" json:"comment_id"`                           // 投票所属的评论ID
+	Up         int32     `gorm:"column:up;not null;comment:赞数" json:"up"`                                                  // 赞数
+	Down       int32     `gorm:"column:down;not null;comment:踩数" json:"down"`                                              // 踩数
+	CreateTime time.Time `gorm:"column:create_time;default:CURRENT_TIMESTAMP;comment:投票创建时间，默认当前时间" json:"create_time"`    // 投票创建时间，默认当前时间
+	UpdateTime time.Time `gorm:"column:update_time;default:CURRENT_TIMESTAMP;comment:投票更新时间，每次更新时自动修改" json:"update_time"` // 投票更新时间，每次更新时自动修改
+	DeleteTime int       `gorm:"column:delete_time;comment:逻辑删除时间，NULL表示未删除" json:"delete_time"`                           // 逻辑删除时间，NULL表示未删除
 }
 
 // TableName CommentVote's table name

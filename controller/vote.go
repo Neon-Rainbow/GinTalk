@@ -35,18 +35,11 @@ func (vh *VoteHandler) VoteHandler(c *gin.Context) {
 		return
 	}
 
-	userID, err := getCurrentUserID(c)
-	if err != nil {
-		ResponseErrorWithMsg(c, code.InvalidAuth, err.Error())
-		return
-	}
-
-	if userID != vote.UserID {
+	if !isUserIDMatch(c, vote.UserID) {
 		ResponseErrorWithMsg(c, code.InvalidParam, "用户 ID 不匹配")
-		return
 	}
 
-	apiError := vh.VoteServiceInterface.Vote(c.Request.Context(), vote.ID, vote.Vote, userID, vote.Vote)
+	apiError := vh.VoteServiceInterface.Vote(c.Request.Context(), vote.ID, vote.VoteFor, vote.UserID, vote.Vote)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -79,13 +72,8 @@ func (vh *VoteHandler) MyVoteListHandler(c *gin.Context) {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	userID, err := getCurrentUserID(c)
-	if err != nil {
-		ResponseErrorWithMsg(c, code.InvalidAuth, err.Error())
-		return
-	}
 
-	if userID != myVoteList.UserID {
+	if !isUserIDMatch(c, myVoteList.UserID) {
 		ResponseErrorWithMsg(c, code.InvalidParam, "用户 ID 不匹配")
 		return
 	}
@@ -162,13 +150,7 @@ func (vh *VoteHandler) CheckUserVotedHandler(c *gin.Context) {
 		return
 	}
 
-	userID, err := getCurrentUserID(c)
-	if err != nil {
-		ResponseErrorWithMsg(c, code.InvalidAuth, err.Error())
-		return
-	}
-
-	if userID != postIds.UserID {
+	if !isUserIDMatch(c, postIds.UserID) {
 		ResponseErrorWithMsg(c, code.InvalidParam, "用户 ID 不匹配")
 		return
 	}
@@ -177,7 +159,7 @@ func (vh *VoteHandler) CheckUserVotedHandler(c *gin.Context) {
 		c.Request.Context(),
 		postIds.IDs,
 		postIds.VoteFor,
-		userID)
+		postIds.UserID)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return

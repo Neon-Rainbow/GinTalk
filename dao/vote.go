@@ -106,9 +106,11 @@ func (vd *VoteDao) ContentVoteCase1(ctx context.Context, id int64, voteFor int) 
 	var sqlStr string
 	if voteFor == VotePost {
 		sqlStr = `UPDATE content_votes SET up = up + 1 WHERE post_id = ? AND delete_time = 0`
+		//sqlStr = `INSERT INTO content_votes (post_id, up, down) VALUES (?, 1, 0)`
 		return vd.Exec(sqlStr, id).Error
 	} else {
 		sqlStr = `UPDATE comment_votes SET up = up + 1 WHERE comment_id = ? AND delete_time = 0`
+		//sqlStr = `INSERT INTO comment_votes (comment_id, up, down) VALUES (?, 1, 0)`
 	}
 	return vd.Exec(sqlStr, id).Error
 }
@@ -136,9 +138,11 @@ func (vd *VoteDao) ContentVoteCase2(ctx context.Context, id int64, voteFor int) 
 func (vd *VoteDao) VoteCase3(ctx context.Context, id int64, voteFor int, userID int64) error {
 	var sqlStr string
 	if voteFor == VotePost {
-		sqlStr = `UPDATE vote SET delete_time = CURRENT_TIME WHERE post_id = ? AND user_id = ? AND delete_time = 0`
+		sqlStr = `DELETE FROM vote WHERE post_id = ? AND user_id = ? AND delete_time = 0`
+		//sqlStr = `UPDATE vote SET delete_time = CURRENT_TIME WHERE post_id = ? AND user_id = ? AND delete_time = 0`
 	} else {
-		sqlStr = `UPDATE vote SET delete_time = CURRENT_TIME WHERE comment_id = ? AND user_id = ? AND delete_time = 0`
+		sqlStr = `DELETE FROM vote WHERE comment_id = ? AND user_id = ? AND delete_time = 0`
+		//sqlStr = `UPDATE vote SET delete_time = CURRENT_TIME WHERE comment_id = ? AND user_id = ? AND delete_time = 0`
 	}
 	return vd.WithContext(ctx).Exec(sqlStr, id, userID).Error
 }
@@ -156,9 +160,11 @@ func (vd *VoteDao) ContentVoteCase3(ctx context.Context, id int64, voteFor int) 
 func (vd *VoteDao) VoteCase4(id int64, ctx context.Context, voteFor int, userID int64) error {
 	var sqlStr string
 	if voteFor == VotePost {
-		sqlStr = `UPDATE vote SET delete_time = CURRENT_TIME WHERE post_id = ? AND user_id = ? AND delete_time = 0`
+		sqlStr = `DELETE FROM vote WHERE post_id = ? AND user_id = ? AND delete_time = 0`
+		//sqlStr = `UPDATE vote SET delete_time = CURRENT_TIME WHERE post_id = ? AND user_id = ? AND delete_time = 0`
 	} else {
-		sqlStr = `UPDATE vote SET delete_time = CURRENT_TIME WHERE comment_id = ? AND user_id = ? AND delete_time = 0`
+		sqlStr = `DELETE FROM vote WHERE comment_id = ? AND user_id = ? AND delete_time = 0`
+		//sqlStr = `UPDATE vote SET delete_time = CURRENT_TIME WHERE comment_id = ? AND user_id = ? AND delete_time = 0`
 	}
 	return vd.WithContext(ctx).Exec(sqlStr, id, userID).Error
 }
@@ -186,9 +192,11 @@ func (vd *VoteDao) VoteCase5(ctx context.Context, id int64, voteFor int, userID 
 func (vd *VoteDao) ContentVoteCase5(ctx context.Context, id int64, voteFor int) error {
 	var sqlStr string
 	if voteFor == VotePost {
-		sqlStr = `UPDATE content_votes SET down = down + 1 WHERE post_id = ? AND delete_time = 0`
+		sqlStr = `UPDATE content_votes SET up = up - 1, down = down + 1 WHERE post_id = ? AND delete_time = 0`
+		//sqlStr = `INSERT INTO content_votes (post_id, up, down) VALUES (?, 0, 1)`
 	} else {
-		sqlStr = `UPDATE comment_votes SET down = down + 1 WHERE comment_id = ? AND delete_time = 0`
+		sqlStr = `UPDATE comment_votes SET up = up - 1, down = down + 1 WHERE comment_id = ? AND delete_time = 0`
+		//sqlStr = `INSERT INTO comment_votes (comment_id, up, down) VALUES (?, 0, 1)`
 	}
 	return vd.Exec(sqlStr, id).Error
 }

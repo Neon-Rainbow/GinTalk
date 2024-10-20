@@ -36,7 +36,7 @@ func newComment(db *gorm.DB, opts ...gen.DOOption) comment {
 	_comment.Status = field.NewInt32(tableName, "status")
 	_comment.CreateTime = field.NewTime(tableName, "create_time")
 	_comment.UpdateTime = field.NewTime(tableName, "update_time")
-	_comment.DeleteTime = field.NewField(tableName, "delete_time")
+	_comment.DeleteTime = field.NewInt(tableName, "delete_time")
 
 	_comment.fillFieldMap()
 
@@ -56,7 +56,7 @@ type comment struct {
 	Status     field.Int32  // 评论状态：1-正常，0-删除
 	CreateTime field.Time   // 评论创建时间，默认当前时间
 	UpdateTime field.Time   // 评论更新时间，每次更新时自动修改
-	DeleteTime field.Field  // 逻辑删除时间，NULL表示未删除
+	DeleteTime field.Int    // 逻辑删除时间，NULL表示未删除
 
 	fieldMap map[string]field.Expr
 }
@@ -82,7 +82,7 @@ func (c *comment) updateTableName(table string) *comment {
 	c.Status = field.NewInt32(table, "status")
 	c.CreateTime = field.NewTime(table, "create_time")
 	c.UpdateTime = field.NewTime(table, "update_time")
-	c.DeleteTime = field.NewField(table, "delete_time")
+	c.DeleteTime = field.NewInt(table, "delete_time")
 
 	c.fillFieldMap()
 

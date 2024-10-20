@@ -15,7 +15,7 @@ redis:
   port: 6379
 
 logger:
-  level: "debug"       # 日志级别：debug, info, warn, error, dpanic, panic, fatal
+  level: "warn"       # 日志级别：debug, info, warn, error, dpanic, panic, fatal
   format: "json"      # 输出格式：console 或 json
   outputPaths:        # 日志输出路径，可以是多个
     - "stdout"        # 输出到标准输出

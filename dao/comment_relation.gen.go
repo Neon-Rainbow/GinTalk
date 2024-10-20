@@ -33,7 +33,7 @@ func newCommentRelation(db *gorm.DB, opts ...gen.DOOption) commentRelation {
 	_commentRelation.ReplyID = field.NewInt64(tableName, "reply_id")
 	_commentRelation.CreateTime = field.NewTime(tableName, "create_time")
 	_commentRelation.UpdateTime = field.NewTime(tableName, "update_time")
-	_commentRelation.DeleteTime = field.NewField(tableName, "delete_time")
+	_commentRelation.DeleteTime = field.NewInt(tableName, "delete_time")
 
 	_commentRelation.fillFieldMap()
 
@@ -50,7 +50,7 @@ type commentRelation struct {
 	ReplyID    field.Int64 // 回复的评论的comment_id
 	CreateTime field.Time  // 评论关系创建时间，默认当前时间
 	UpdateTime field.Time  // 评论关系更新时间，每次更新时自动修改
-	DeleteTime field.Field // 逻辑删除时间，NULL表示未删除
+	DeleteTime field.Int   // 逻辑删除时间，NULL表示未删除
 
 	fieldMap map[string]field.Expr
 }
@@ -73,7 +73,7 @@ func (c *commentRelation) updateTableName(table string) *commentRelation {
 	c.ReplyID = field.NewInt64(table, "reply_id")
 	c.CreateTime = field.NewTime(table, "create_time")
 	c.UpdateTime = field.NewTime(table, "update_time")
-	c.DeleteTime = field.NewField(table, "delete_time")
+	c.DeleteTime = field.NewInt(table, "delete_time")
 
 	c.fillFieldMap()
 

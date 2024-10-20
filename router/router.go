@@ -41,7 +41,7 @@ func SetupRouter() *gin.Engine {
 		v1.GET("/refresh_token", authController.RefreshHandler)
 	}
 
-	v1.Use(controller.JWTAuthMiddleware())
+	//v1.Use(controller.JWTAuthMiddleware())
 	communityController := controller.NewCommunityController()
 	postController := controller.NewPostHandler()
 	voteController := controller.NewVoteHandle()
@@ -71,6 +71,7 @@ func SetupRouter() *gin.Engine {
 		v1.GET("/comment/top/count", commentController.GetTopCommentCount)
 		v1.GET("/comment/sub/count", commentController.GetSubCommentCount)
 		v1.GET("/comment/user/count", commentController.GetCommentCountByUserID)
+		v1.GET("/comment", commentController.GetCommentByCommentID)
 	}
 
 	r.NoRoute(func(c *gin.Context) {

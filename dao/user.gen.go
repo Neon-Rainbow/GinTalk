@@ -35,7 +35,7 @@ func newUser(db *gorm.DB, opts ...gen.DOOption) user {
 	_user.Gender = field.NewInt32(tableName, "gender")
 	_user.CreateTime = field.NewTime(tableName, "create_time")
 	_user.UpdateTime = field.NewTime(tableName, "update_time")
-	_user.DeleteTime = field.NewField(tableName, "delete_time")
+	_user.DeleteTime = field.NewInt(tableName, "delete_time")
 
 	_user.fillFieldMap()
 
@@ -55,7 +55,7 @@ type user struct {
 	Gender     field.Int32  // 用户性别：0-未知，1-男，2-女
 	CreateTime field.Time   // 记录的创建时间
 	UpdateTime field.Time   // 记录的最后更新时间
-	DeleteTime field.Field  // 逻辑删除时间，NULL表示未删除
+	DeleteTime field.Int    // 逻辑删除时间，NULL表示未删除
 
 	fieldMap map[string]field.Expr
 }
@@ -80,7 +80,7 @@ func (u *user) updateTableName(table string) *user {
 	u.Gender = field.NewInt32(table, "gender")
 	u.CreateTime = field.NewTime(table, "create_time")
 	u.UpdateTime = field.NewTime(table, "update_time")
-	u.DeleteTime = field.NewField(table, "delete_time")
+	u.DeleteTime = field.NewInt(table, "delete_time")
 
 	u.fillFieldMap()
 
