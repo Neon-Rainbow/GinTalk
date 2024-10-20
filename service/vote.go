@@ -14,12 +14,13 @@ import (
 var _ VoteServiceInterface = (*VoteService)(nil)
 
 type VoteServiceInterface interface {
-	Vote(ctx context.Context, postID int64, userID int64, voteType int) *apiError.ApiError
-	RevokeVote(ctx context.Context, postID int64, userID int64) *apiError.ApiError
-	MyVoteList(ctx context.Context, userID int64, pageNum int, pageSize int) ([]int64, *apiError.ApiError)
-	GetVoteCount(ctx context.Context, postID int64) (int64, int64, *apiError.ApiError)
-	CheckUserVoted(ctx context.Context, postID []int64, userID int64) ([]model.Vote, *apiError.ApiError)
+	Vote(ctx context.Context, id int64, voteFor int, userID int64, voteType int) *apiError.ApiError
+	RevokeVote(ctx context.Context, id int64, voteFor int, userID int64) *apiError.ApiError
+	MyVoteList(ctx context.Context, userID int64, voteFor, pageNum, pageSize int) ([]int64, *apiError.ApiError)
+	GetVoteCount(ctx context.Context, id int64, voteFor int) (int64, int64, *apiError.ApiError)
+	CheckUserVoted(ctx context.Context, id []int64, voteFor int, userID int64) ([]model.Vote, *apiError.ApiError)
 	GetPostVoteDetail(ctx context.Context, postID int64, pageNum, pageSize int) ([]*DTO.UserVoteDetailDTO, *apiError.ApiError)
+	GetCommentVoteDetail(ctx context.Context, commentID int64, pageNum, pageSize int) ([]*DTO.UserVoteDetailDTO, *apiError.ApiError)
 }
 
 type VoteService struct {
@@ -49,9 +50,9 @@ v=-1时，有两种情况
 	1.之前没投过票，现在要投反对票
 	2.之前投过赞成票，现在要改为反对票
 */
-func (v *VoteService) Vote(ctx context.Context, postID int64, userID int64, voteType int) *apiError.ApiError {
+func (v *VoteService) Vote(ctx context.Context, id int64, voteFor int, userID int64, voteType int) *apiError.ApiError {
 	// 查询先前的投票记录
-	voteRecord, err := v.VoteDaoInterface.GetVoteRecord(ctx, postID, userID)
+	voteRecord, err := v.VoteDaoInterface.GetVoteRecord(ctx, id, voteFor, userID)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -69,43 +70,43 @@ func (v *VoteService) Vote(ctx context.Context, postID int64, userID int64, vote
 	// 根据投票类型和先前的投票记录，计算投票数的变化量
 	if voteType == 1 {
 		if voteRecord == 0 {
-			err = v.VoteDaoInterface.VoteCase1(ctx, postID, userID)
+			err = v.VoteDaoInterface.VoteCase1(ctx, id, voteFor, userID)
 			caseNum = 1
 		} else {
-			err = v.VoteDaoInterface.VoteCase2(ctx, postID, userID)
+			err = v.VoteDaoInterface.VoteCase2(ctx, id, voteFor, userID)
 			caseNum = 2
 		}
 	} else if voteType == 0 {
 		if voteRecord == 1 {
-			err = v.VoteDaoInterface.VoteCase3(ctx, postID, userID)
+			err = v.VoteDaoInterface.VoteCase3(ctx, id, voteFor, userID)
 			caseNum = 3
 		} else {
-			err = v.VoteDaoInterface.VoteCase4(ctx, postID, userID)
+			err = v.VoteDaoInterface.VoteCase4(id, ctx, voteFor, userID)
 			caseNum = 4
 		}
 	} else {
 		if voteRecord == 0 {
-			err = v.VoteDaoInterface.VoteCase5(ctx, postID, userID)
+			err = v.VoteDaoInterface.VoteCase5(ctx, id, voteFor, userID)
 			caseNum = 5
 		} else {
-			err = v.VoteDaoInterface.VoteCase6(ctx, postID, userID)
+			err = v.VoteDaoInterface.VoteCase6(ctx, id, voteFor, userID)
 			caseNum = 6
 		}
 	}
 
 	// 异步更新帖子的投票数
-	go updatePostVoteCount(ctx, v, postID, caseNum)
+	go updatePostVoteCount(ctx, v, id, voteFor, caseNum)
 
 	return nil
 }
 
 // RevokeVote 取消投票
-func (v *VoteService) RevokeVote(ctx context.Context, postID int64, userID int64) *apiError.ApiError {
-	return v.Vote(ctx, postID, userID, 0)
+func (v *VoteService) RevokeVote(ctx context.Context, id int64, voteFor int, userID int64) *apiError.ApiError {
+	return v.Vote(ctx, id, voteFor, userID, 0)
 }
 
-func (v *VoteService) MyVoteList(ctx context.Context, userID int64, pageNum int, pageSize int) ([]int64, *apiError.ApiError) {
-	voteRecord, err := v.VoteDaoInterface.GetUserVoteList(ctx, userID, pageNum, pageSize)
+func (v *VoteService) MyVoteList(ctx context.Context, userID int64, voteFor, pageNum, pageSize int) ([]int64, *apiError.ApiError) {
+	voteRecord, err := v.VoteDaoInterface.GetUserVoteList(ctx, voteFor, userID, pageNum, pageSize)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -115,8 +116,14 @@ func (v *VoteService) MyVoteList(ctx context.Context, userID int64, pageNum int,
 	return voteRecord, nil
 }
 
-func (v *VoteService) GetVoteCount(ctx context.Context, postID int64) (int64, int64, *apiError.ApiError) {
-	up, down, err := v.VoteDaoInterface.GetContentVoteCount(ctx, postID)
+func (v *VoteService) GetVoteCount(ctx context.Context, id int64, voteFor int) (int64, int64, *apiError.ApiError) {
+	var up, down int64
+	var err error
+	if voteFor == dao.VotePost {
+		up, down, err = v.VoteDaoInterface.GetContentVoteCount(ctx, id)
+	} else {
+		up, down, err = v.VoteDaoInterface.GetCommentVoteCount(ctx, id)
+	}
 	if err != nil {
 		return 0, 0, &apiError.ApiError{
 			Code: code.ServerError,
@@ -127,15 +134,8 @@ func (v *VoteService) GetVoteCount(ctx context.Context, postID int64) (int64, in
 }
 
 // CheckUserVoted 批量查询用户是否投票过
-func (v *VoteService) CheckUserVoted(ctx context.Context, postID []int64, userID int64) ([]model.Vote, *apiError.ApiError) {
-	//// 构建原生 SQL 查询
-	//sqlStr := `SELECT post_id, user_id, vote
-	//           FROM vote
-	//           WHERE post_id IN (?) AND delete_time IS NULL AND user_id = ?`
-	//
-	//// 使用 Raw() 执行查询
-	//err := MySQL.GetDB().WithContext(ctx).Raw(sqlStr, postID, userID).Scan(&votes).Error
-	votes, err := v.VoteDaoInterface.CheckUserVoted(ctx, postID, userID)
+func (v *VoteService) CheckUserVoted(ctx context.Context, id []int64, voteFor int, userID int64) ([]model.Vote, *apiError.ApiError) {
+	votes, err := v.VoteDaoInterface.CheckUserVoted(ctx, id, voteFor, userID)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -160,6 +160,21 @@ func (v *VoteService) GetPostVoteDetail(ctx context.Context, postID int64, pageN
 	return resp, nil
 }
 
+func (v *VoteService) GetCommentVoteDetail(ctx context.Context, commentID int64, pageNum, pageSize int) ([]*DTO.UserVoteDetailDTO, *apiError.ApiError) {
+	voteDetails, err := v.VoteDaoInterface.GetCommentVoteDetail(ctx, commentID, pageNum, pageSize)
+	if err != nil {
+		return nil, &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  fmt.Sprintf("查询投票详情失败: %v", err),
+		}
+	}
+	resp := make([]*DTO.UserVoteDetailDTO, len(voteDetails))
+	for i, voteDetail := range voteDetails {
+		resp[i] = &voteDetail
+	}
+	return resp, nil
+}
+
 func NewVoteService(voteDao dao.IVoteDo, voteDaoInterface dao.VoteDaoInterface) VoteServiceInterface {
 	return &VoteService{
 		voteDao,
@@ -167,7 +182,7 @@ func NewVoteService(voteDao dao.IVoteDo, voteDaoInterface dao.VoteDaoInterface) 
 	}
 }
 
-func updatePostVoteCount(ctx context.Context, v *VoteService, postID int64, caseNum int) {
+func updatePostVoteCount(ctx context.Context, v *VoteService, id int64, voteFor int, caseNum int) {
 	var maxRetries = 3          // 最大重试次数
 	var delay = 2 * time.Second // 重试间隔时间
 	var err error
@@ -175,22 +190,22 @@ func updatePostVoteCount(ctx context.Context, v *VoteService, postID int64, case
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		switch caseNum {
 		case 1:
-			err = v.VoteDaoInterface.ContentVoteCase1(ctx, postID)
+			err = v.VoteDaoInterface.ContentVoteCase1(ctx, id, voteFor)
 			break
 		case 2:
-			err = v.VoteDaoInterface.ContentVoteCase2(ctx, postID)
+			err = v.VoteDaoInterface.ContentVoteCase2(ctx, id, voteFor)
 			break
 		case 3:
-			err = v.VoteDaoInterface.ContentVoteCase3(ctx, postID)
+			err = v.VoteDaoInterface.ContentVoteCase3(ctx, id, voteFor)
 			break
 		case 4:
-			err = v.VoteDaoInterface.ContentVoteCase4(ctx, postID)
+			err = v.VoteDaoInterface.ContentVoteCase4(ctx, id, voteFor)
 			break
 		case 5:
-			err = v.VoteDaoInterface.ContentVoteCase5(ctx, postID)
+			err = v.VoteDaoInterface.ContentVoteCase5(ctx, id, voteFor)
 			break
 		case 6:
-			err = v.VoteDaoInterface.ContentVoteCase6(ctx, postID)
+			err = v.VoteDaoInterface.ContentVoteCase6(ctx, id, voteFor)
 			break
 		}
 		if err != nil {

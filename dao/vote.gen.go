@@ -29,6 +29,7 @@ func newVote(db *gorm.DB, opts ...gen.DOOption) vote {
 	_vote.ALL = field.NewAsterisk(tableName)
 	_vote.ID = field.NewInt64(tableName, "id")
 	_vote.PostID = field.NewInt64(tableName, "post_id")
+	_vote.CommentID = field.NewInt64(tableName, "comment_id")
 	_vote.UserID = field.NewInt64(tableName, "user_id")
 	_vote.Vote = field.NewInt32(tableName, "vote")
 	_vote.CreateTime = field.NewTime(tableName, "create_time")
@@ -46,6 +47,7 @@ type vote struct {
 	ALL        field.Asterisk
 	ID         field.Int64 // 自增主键，唯一标识每条投票记录
 	PostID     field.Int64 // 投票所属的帖子ID
+	CommentID  field.Int64 // 投票所属的评论ID
 	UserID     field.Int64 // 投票用户的用户ID
 	Vote       field.Int32 // 投票类型：1-赞，-1-踩
 	CreateTime field.Time  // 投票创建时间，默认当前时间
@@ -69,6 +71,7 @@ func (v *vote) updateTableName(table string) *vote {
 	v.ALL = field.NewAsterisk(table)
 	v.ID = field.NewInt64(table, "id")
 	v.PostID = field.NewInt64(table, "post_id")
+	v.CommentID = field.NewInt64(table, "comment_id")
 	v.UserID = field.NewInt64(table, "user_id")
 	v.Vote = field.NewInt32(table, "vote")
 	v.CreateTime = field.NewTime(table, "create_time")
@@ -98,9 +101,10 @@ func (v *vote) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (v *vote) fillFieldMap() {
-	v.fieldMap = make(map[string]field.Expr, 7)
+	v.fieldMap = make(map[string]field.Expr, 8)
 	v.fieldMap["id"] = v.ID
 	v.fieldMap["post_id"] = v.PostID
+	v.fieldMap["comment_id"] = v.CommentID
 	v.fieldMap["user_id"] = v.UserID
 	v.fieldMap["vote"] = v.Vote
 	v.fieldMap["create_time"] = v.CreateTime

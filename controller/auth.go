@@ -9,7 +9,8 @@ import (
 
 const (
 	// ContextUserIDKey 是上下文中用户ID的key
-	ContextUserIDKey = "user_id"
+	ContextUserIDKey   = "user_id"
+	ContextUsernameKey = "username"
 )
 
 // JWTAuthMiddleware JWT 认证中间件, 用于验证用户是否登录
@@ -42,19 +43,8 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		//value, err := dao.GetUserTokenFromRedis(c, myClaims.UserID)
-		//if err != nil {
-		//	ResponseErrorWithCode(c, code.InvalidAuth)
-		//	c.Abort()
-		//	return
-		//}
-		//if value["access_token"] != token {
-		//	ResponseErrorWithCode(c, code.InvalidAuth)
-		//	c.Abort()
-		//	return
-		//}
-
 		c.Set(ContextUserIDKey, myClaims.UserID)
+		c.Set(ContextUsernameKey, myClaims.Username)
 		c.Next()
 	}
 }

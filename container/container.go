@@ -15,6 +15,7 @@ var (
 	postService      service.PostServiceInterface
 	authService      service.AuthServiceInterface
 	voteService      service.VoteServiceInterface
+	commentService   service.CommentServiceInterface
 )
 
 // InitContainer 初始化容器
@@ -27,6 +28,7 @@ func InitContainer() {
 		postService = service.NewPostService(dao.Post.WithContext(context.Background()), dao.NewPostDao(MySQL.GetDB()))
 		authService = service.NewAuthService(dao.User.WithContext(context.Background()), dao.NewUserDao(MySQL.GetDB()))
 		voteService = service.NewVoteService(dao.Vote.WithContext(context.Background()), dao.NewVoteDao(MySQL.GetDB()))
+		commentService = service.NewCommentService(dao.NewCommentDao(MySQL.GetDB()))
 	})
 }
 
@@ -58,4 +60,11 @@ func GetVoteService() service.VoteServiceInterface {
 		panic("vote service is not initialized")
 	}
 	return voteService
+}
+
+func GetCommentService() service.CommentServiceInterface {
+	if commentService == nil {
+		panic("comment service is not initialized")
+	}
+	return commentService
 }

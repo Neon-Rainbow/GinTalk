@@ -47,7 +47,7 @@ func (as *AuthService) LoginService(ctx context.Context, dto *DTO.LoginRequestDT
 			Msg:  "密码错误",
 		}
 	}
-	accessToken, refreshToken, err := jwt.GenerateToken(user.UserID)
+	accessToken, refreshToken, err := jwt.GenerateToken(user.UserID, user.Username)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -100,9 +100,7 @@ func (as *AuthService) RefreshTokenService(ctx context.Context, token string) (s
 			Msg:  err.Error(),
 		}
 	}
-	userID := myClaims.UserID
-
-	accessToken, refreshToken, err := jwt.GenerateToken(userID)
+	accessToken, refreshToken, err := jwt.GenerateToken(myClaims.UserID, myClaims.Username)
 	if err != nil {
 		return "", "", &apiError.ApiError{
 			Code: code.ServerError,

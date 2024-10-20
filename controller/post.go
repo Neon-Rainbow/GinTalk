@@ -53,7 +53,7 @@ func (ph *PostHandler) GetPostListHandler(c *gin.Context) {
 }
 
 func (ph *PostHandler) GetPostDetailHandler(c *gin.Context) {
-	postID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	postID, err := strconv.ParseInt(c.Param("ID"), 10, 64)
 	if err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
@@ -70,7 +70,7 @@ func (ph *PostHandler) GetPostDetailHandler(c *gin.Context) {
 // GetPostDetailHandler 获取帖子详情
 func getPageInfo(c *gin.Context) (pageNum int, pageSize int) {
 	var err error
-	_n, _s := c.Query("pageNum"), c.Query("pageSize")
+	_n, _s := c.Query("PageNum"), c.Query("PageSize")
 	pageNum, err = strconv.Atoi(_n)
 	if err != nil || pageNum <= 0 {
 		pageNum = 1

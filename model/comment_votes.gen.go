@@ -10,21 +10,19 @@ import (
 	"gorm.io/gorm"
 )
 
-const TableNameVote = "vote"
+const TableNameCommentVote = "comment_votes"
 
-// Vote mapped from table <vote>
-type Vote struct {
-	ID         int64          `gorm:"column:id;primaryKey;autoIncrement:true;comment:自增主键，唯一标识每条投票记录" json:"id"`                // 自增主键，唯一标识每条投票记录
-	PostID     int64          `gorm:"column:post_id;not null;comment:投票所属的帖子ID" json:"post_id"`                                 // 投票所属的帖子ID
+// CommentVote mapped from table <comment_votes>
+type CommentVote struct {
 	CommentID  int64          `gorm:"column:comment_id;not null;comment:投票所属的评论ID" json:"comment_id"`                           // 投票所属的评论ID
-	UserID     int64          `gorm:"column:user_id;not null;comment:投票用户的用户ID" json:"user_id"`                                 // 投票用户的用户ID
-	Vote       int32          `gorm:"column:vote;not null;comment:投票类型：1-赞，-1-踩" json:"vote"`                                   // 投票类型：1-赞，-1-踩
+	Up         int32          `gorm:"column:up;not null;comment:赞数" json:"up"`                                                  // 赞数
+	Down       int32          `gorm:"column:down;not null;comment:踩数" json:"down"`                                              // 踩数
 	CreateTime time.Time      `gorm:"column:create_time;default:CURRENT_TIMESTAMP;comment:投票创建时间，默认当前时间" json:"create_time"`    // 投票创建时间，默认当前时间
 	UpdateTime time.Time      `gorm:"column:update_time;default:CURRENT_TIMESTAMP;comment:投票更新时间，每次更新时自动修改" json:"update_time"` // 投票更新时间，每次更新时自动修改
 	DeleteTime gorm.DeletedAt `gorm:"column:delete_time;comment:逻辑删除时间，NULL表示未删除" json:"delete_time"`                           // 逻辑删除时间，NULL表示未删除
 }
 
-// TableName Vote's table name
-func (*Vote) TableName() string {
-	return TableNameVote
+// TableName CommentVote's table name
+func (*CommentVote) TableName() string {
+	return TableNameCommentVote
 }

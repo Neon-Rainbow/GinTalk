@@ -19,12 +19,13 @@ const (
 
 type MyClaims struct {
 	UserID    int64  `json:"user_id"`
+	Username  string `json:"username"`
 	TokenType string `json:"token_type"`
 	jwt.RegisteredClaims
 }
 
 // GenerateToken 生成token
-func GenerateToken[T int64 | string | uint](userID T) (accessToken string, refreshToken string, err error) {
+func GenerateToken[T int64 | string | uint](userID T, username string) (accessToken string, refreshToken string, err error) {
 	var int64UserID int64
 	switch v := any(userID).(type) {
 	case uint:
@@ -42,9 +43,10 @@ func GenerateToken[T int64 | string | uint](userID T) (accessToken string, refre
 		return "", "", fmt.Errorf("unsupported userID type")
 	}
 
-	f := func(userID int64, tokenType string, validTime time.Duration) (string, error) {
+	f := func(userID int64, username string, tokenType string, validTime time.Duration) (string, error) {
 		c := MyClaims{
 			UserID:    userID,
+			Username:  username,
 			TokenType: tokenType,
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(validTime)),
@@ -60,7 +62,7 @@ func GenerateToken[T int64 | string | uint](userID T) (accessToken string, refre
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		accessToken, err = f(int64UserID, AccessTokenName, time.Hour*24*7)
+		accessToken, err = f(int64UserID, username, AccessTokenName, time.Hour*24*7)
 		if err != nil {
 			errorChannel <- err
 			return
@@ -69,7 +71,7 @@ func GenerateToken[T int64 | string | uint](userID T) (accessToken string, refre
 
 	go func() {
 		defer wg.Done()
-		refreshToken, err = f(int64UserID, RefreshTokenName, time.Hour*24*7)
+		refreshToken, err = f(int64UserID, username, RefreshTokenName, time.Hour*24*7)
 		if err != nil {
 			errorChannel <- err
 			return

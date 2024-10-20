@@ -1,29 +1,34 @@
 package DTO
 
 type VoteDTO struct {
-	PostID int64 `json:"post_id" binding:"required"`
-	UserID int64 `json:"user_id" binding:"required"`
-	Vote   int   `json:"vote"`
+	ID      int64 `json:"id" binding:"required"`
+	VoteFor int   `json:"vote_for" binding:"required"`
+	UserID  int64 `json:"user_id" binding:"required"`
+	Vote    int   `json:"vote"`
 }
 
 type MyVoteListDTO struct {
 	UserID   int64 `json:"user_id" form:"user_id"`
+	VoteFor  int   `json:"vote_for" form:"vote_for"`
 	PageNum  int   `json:"page_num" form:"page_num"`
 	PageSize int   `json:"page_size" form:"page_size"`
 }
 
-type CreateVoteDTO struct {
-	UserID int64   `json:"user_id" binding:"required"`
-	PostID []int64 `json:"post_id" binding:"required"`
+type CheckVoteListDTO struct {
+	UserID  int64   `json:"user_id" form:"user_id" binding:"required"`
+	IDs     []int64 `json:"id" form:"id" binding:"required"`
+	VoteFor int     `json:"vote_for" form:"vote_for" binding:"required"`
 }
 
 type VoteCountDTO struct {
-	PostID int64 `json:"post_id" form:"post_id" binding:"required"`
+	ID      int64 `json:"id" form:"post_id" binding:"required"`
+	VoteFor int   `json:"vote_for" form:"vote_for" binding:"required"`
 }
 
 type UserVoteDetailDTO struct {
-	UserID   int64  `json:"user_id"`
-	PostID   int64  `json:"post_id"`
-	Username string `json:"username"`
-	Vote     int    `json:"vote"`
+	UserID    int64  `json:"user_id"`
+	PostID    int64  `json:"post_id,omitempty"`
+	CommentID int64  `json:"comment_id,omitempty"`
+	Username  string `json:"username"`
+	Vote      int    `json:"vote"`
 }
