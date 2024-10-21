@@ -78,11 +78,13 @@ func (pc *PostCache) SavePostToRedis(ctx context.Context, summary *DTO.PostSumma
 
 func (pc *PostCache) GetPostIDsFromRedis(ctx context.Context, order, pageNum, pageSize int) ([]int64, error) {
 	var key string
-	if order == OrderByHot {
-		key = GenerateRedisKey(PostRankingTemplate)
-	} else {
-		key = GenerateRedisKey(PostTimeTemplate)
+
+	caseTemplateMap := map[int]string{
+		OrderByHot:  PostRankingTemplate,
+		OrderByTime: PostTimeTemplate,
 	}
+
+	key = GenerateRedisKey(caseTemplateMap[order])
 
 	// 计算分页的开始和结束位置
 	start := int64((pageNum - 1) * pageSize)
