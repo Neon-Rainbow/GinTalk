@@ -19,6 +19,7 @@ type PostServiceInterface interface {
 	GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostSummary, *apiError.ApiError)
 	GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, *apiError.ApiError)
 	UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError
+	GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, *apiError.ApiError)
 }
 
 type PostService struct {
@@ -110,4 +111,22 @@ func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 		}
 	}
 	return nil
+}
+
+func (ps *PostService) GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, *apiError.ApiError) {
+	// pageNum 和 pageSize 不能小于等于 0
+	if pageNum <= 0 {
+		pageNum = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+	list, err := ps.PostDaoInterface.GetPostListByCommunityID(ctx, communityID, pageNum, pageSize)
+	if err != nil {
+		return nil, &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  fmt.Sprintf("获取社区帖子列表失败: %v", err),
+		}
+	}
+	return list, nil
 }

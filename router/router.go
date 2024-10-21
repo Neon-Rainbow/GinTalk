@@ -52,6 +52,7 @@ func SetupRouter() *gin.Engine {
 
 		v1.POST("/post", postController.CreatePostHandler)
 		v1.GET("/post", postController.GetPostListHandler)
+		v1.GET("/post/community", postController.GetPostListByCommunityID)
 		v1.GET("/post/:id", postController.GetPostDetailHandler)
 		v1.PUT("/post", postController.UpdatePostHandler)
 

@@ -18,6 +18,9 @@ type PostDaoInterface interface {
 	// UpdatePost 更新帖子
 	// 参数post中只需要有PostID, Title, Summary, Content四个字段
 	UpdatePost(ctx context.Context, post *model.Post) error
+
+	// GetPostListByCommunityID 根据社区ID获取帖子列表
+	GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, error)
 }
 
 type PostDao struct {
@@ -142,4 +145,33 @@ func (pd *PostDao) UpdatePost(ctx context.Context, post *model.Post) error {
 		return err
 	}
 	return nil
+}
+
+func (pd *PostDao) GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, error) {
+	sqlStr := `SELECT 
+					post.post_id,
+					post.title,
+					post.summary,
+					post.author_id,
+					user.username,
+					post.community_id,
+					community.community_name,
+				FROM 
+					post
+				INNER JOIN 
+					community ON community.community_id = post.community_id
+				INNER JOIN 
+					user ON user.user_id = post.author_id
+				WHERE 
+					post.community_id = ? 
+				    AND	post.status = 1
+					AND post.delete_time = 0 
+				LIMIT ? OFFSET ?`
+
+	var posts []DTO.PostSummary
+	err := pd.WithContext(ctx).Raw(sqlStr, communityID, pageSize, (pageNum-1)*pageSize).Scan(&posts).Error
+	if err != nil {
+		return nil, err
+	}
+	return posts, nil
 }

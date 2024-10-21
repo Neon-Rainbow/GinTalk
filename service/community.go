@@ -1,7 +1,7 @@
 package service
 
 import (
-	"GinTalk/VO"
+	"GinTalk/DTO"
 	"GinTalk/dao"
 	"GinTalk/pkg/apiError"
 	"GinTalk/pkg/code"
@@ -15,8 +15,8 @@ var _ CommunityServiceInterface = (*CommunityService)(nil)
 
 // CommunityServiceInterface 定义社区服务的接口
 type CommunityServiceInterface interface {
-	GetCommunityList(ctx context.Context) ([]*VO.CommunityVO, *apiError.ApiError)
-	GetCommunityDetail(ctx context.Context, communityID int32) (*VO.CommunityDetailVO, *apiError.ApiError)
+	GetCommunityList(ctx context.Context) ([]*DTO.CommunityNameDTO, *apiError.ApiError)
+	GetCommunityDetail(ctx context.Context, communityID int32) (*DTO.CommunityDetailDTO, *apiError.ApiError)
 }
 
 // CommunityService 是 CommunityServiceInterface 的实现
@@ -34,7 +34,7 @@ func NewCommunityService(communityDao dao.ICommunityDo, communityDaoInterface da
 }
 
 // GetCommunityList 获取社区列表
-func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*VO.CommunityVO, *apiError.ApiError) {
+func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*DTO.CommunityNameDTO, *apiError.ApiError) {
 	// 使用 DAO 获取社区列表
 	communities, err := s.CommunityDaoInterface.GetCommunityList(ctx)
 
@@ -46,9 +46,9 @@ func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*VO.Communit
 	}
 
 	// 构造响应数据
-	resp := make([]*VO.CommunityVO, 0)
+	resp := make([]*DTO.CommunityNameDTO, 0)
 	for _, community := range communities {
-		resp = append(resp, &VO.CommunityVO{
+		resp = append(resp, &DTO.CommunityNameDTO{
 			CommunityID:   community.CommunityID,
 			CommunityName: community.CommunityName,
 		})
@@ -58,7 +58,7 @@ func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*VO.Communit
 }
 
 // GetCommunityDetail 获取社区详情
-func (s *CommunityService) GetCommunityDetail(ctx context.Context, communityID int32) (*VO.CommunityDetailVO, *apiError.ApiError) {
+func (s *CommunityService) GetCommunityDetail(ctx context.Context, communityID int32) (*DTO.CommunityDetailDTO, *apiError.ApiError) {
 	// 使用 DAO 获取社区详情
 	community, err := s.CommunityDaoInterface.GetCommunityDetail(ctx, communityID)
 

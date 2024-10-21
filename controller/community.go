@@ -39,6 +39,7 @@ func (cc *CommunityHandler) CommunityDetailHandler(c *gin.Context) {
 	//string 转为 int32
 	_t, err := strconv.Atoi(_s)
 	if err != nil {
+		zap.L().Error("strconv.Atoi(_s) 错误", zap.Error(err))
 		ResponseErrorWithCode(c, code.InvalidParam)
 		return
 	}

@@ -69,6 +69,33 @@ func (ph *PostHandler) GetPostListHandler(c *gin.Context) {
 	ResponseSuccess(c, postList)
 }
 
+// GetPostListByCommunityID 根据社区ID获取帖子列表
+// @Summary 根据社区ID获取帖子列表
+// @Description 根据社区ID获取帖子列表
+// @Tags 帖子
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "
+// @Param community_id query int true "社区ID"
+// @Param page_num query int false "页码"
+// @Param page_size query int false "每页数量"
+// @Success 200 {object} Response
+// @Router /api/v1/post/community [get]
+func (ph *PostHandler) GetPostListByCommunityID(c *gin.Context) {
+	pageNum, pageSize := getPageInfo(c)
+	communityID, err := strconv.ParseInt(c.Query("community_id"), 10, 64)
+	if err != nil {
+		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
+		return
+	}
+	postList, apiError := container.GetPostService().GetPostListByCommunityID(c.Request.Context(), communityID, pageNum, pageSize)
+	if apiError != nil {
+		ResponseErrorWithApiError(c, apiError)
+		return
+	}
+	ResponseSuccess(c, postList)
+}
+
 // GetPostDetailHandler 获取帖子详情
 // @Summary 获取帖子详情
 // @Description 获取帖子详情
