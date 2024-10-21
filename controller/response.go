@@ -21,26 +21,110 @@ func ResponseSuccess(c *gin.Context, data interface{}) {
 	})
 }
 
-func ResponseErrorWithCode(c *gin.Context, code code.RespCode) {
-	c.JSON(http.StatusOK, Response{
-		Code: code,
-		Msg:  code.GetMsg(),
-		Data: nil,
+func ResponseErrorWithCode(c *gin.Context, respCode code.RespCode) {
+	ResponseErrorWithMsg(c, respCode, respCode.GetMsg())
+	return
+}
+
+func ResponseErrorWithMsg(c *gin.Context, respCode code.RespCode, msg string) {
+	switch respCode {
+	case code.InvalidParam:
+		ResponseBadRequest(c, msg)
+		return
+	case code.InvalidAuth:
+		ResponseUnAuthorized(c, msg)
+		return
+	case code.TimeOut:
+		ResponseTimeout(c, msg)
+		return
+	case code.ServerError:
+		ResponseInternalServerError(c, msg)
+		return
+	default:
+		c.JSON(http.StatusBadRequest, Response{
+			Code: respCode,
+			Msg:  msg,
+			Data: nil,
+		})
+		return
+	}
+}
+
+func ResponseErrorWithApiError(c *gin.Context, apiError *apiError.ApiError) {
+	switch apiError.Code {
+	case code.InvalidParam:
+		ResponseBadRequest(c, apiError.Msg)
+		return
+	case code.InvalidAuth:
+		ResponseUnAuthorized(c, apiError.Msg)
+		return
+	case code.TimeOut:
+		ResponseTimeout(c, apiError.Msg)
+		return
+	case code.ServerError:
+		ResponseInternalServerError(c, apiError.Msg)
+		return
+	default:
+		c.JSON(http.StatusBadRequest, Response{
+			Code: apiError.Code,
+			Msg:  apiError.Msg,
+			Data: nil,
+		},
+		)
+		return
+	}
+}
+
+// ResponseNoContent 无内容响应
+// 返回 204 状态码
+func ResponseNoContent(c *gin.Context) {
+	c.JSON(http.StatusNoContent, nil)
+}
+
+// ResponseCreated 创建成功响应
+// 返回 201 状态码
+func ResponseCreated(c *gin.Context, data interface{}) {
+	c.JSON(http.StatusCreated, Response{
+		Code: code.Success,
+		Msg:  "资源创建成功",
+		Data: data,
 	})
 }
 
-func ResponseErrorWithMsg(c *gin.Context, code code.RespCode, msg string) {
-	c.JSON(http.StatusOK, Response{
-		Code: code,
+// ResponseBadRequest 参数错误响应
+// 返回 400 状态码
+func ResponseBadRequest(c *gin.Context, msg string) {
+	c.JSON(http.StatusBadRequest, Response{
+		Code: code.InvalidParam,
 		Msg:  msg,
 		Data: nil,
 	})
 }
 
-func ResponseErrorWithApiError(c *gin.Context, apiError *apiError.ApiError) {
-	c.JSON(http.StatusOK, Response{
-		Code: apiError.Code,
-		Msg:  apiError.Msg,
+// ResponseUnAuthorized 未授权响应
+// 返回 401 状态码
+func ResponseUnAuthorized(c *gin.Context, msg string) {
+	c.JSON(http.StatusUnauthorized, Response{
+		Code: code.InvalidAuth,
+		Msg:  msg,
+		Data: nil,
+	})
+}
+
+func ResponseTimeout(c *gin.Context, msg string) {
+	c.JSON(http.StatusRequestTimeout, Response{
+		Code: code.TimeOut,
+		Msg:  msg,
+		Data: nil,
+	})
+}
+
+// ResponseInternalServerError 服务器内部错误响应
+// 返回 500 状态码
+func ResponseInternalServerError(c *gin.Context, msg string) {
+	c.JSON(http.StatusInternalServerError, Response{
+		Code: code.ServerError,
+		Msg:  msg,
 		Data: nil,
 	})
 }

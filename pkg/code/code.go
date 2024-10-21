@@ -12,6 +12,7 @@ const (
 	UserNotExist
 	PasswordError
 	UserRefreshTokenError
+	TimeOut
 )
 
 var codeMsg = map[RespCode]string{
@@ -24,6 +25,7 @@ var codeMsg = map[RespCode]string{
 	UserNotExist:          "用户不存在",
 	PasswordError:         "密码错误",
 	UserRefreshTokenError: "刷新token错误",
+	TimeOut:               "超时",
 }
 
 func (c RespCode) GetMsg() string {

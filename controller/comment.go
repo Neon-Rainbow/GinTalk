@@ -93,12 +93,12 @@ func (cc *CommentController) GetSubComments(c *gin.Context) {
 	parentID := int64(_parentIDInt)
 	pageSize, err := strconv.Atoi(_pageSize)
 	if err != nil {
-		ResponseErrorWithMsg(c, code.InvalidParam, "page_size 参数错误")
+		ResponseBadRequest(c, "page_size 参数错误")
 		return
 	}
 	pageNum, err := strconv.Atoi(_pageNum)
 	if err != nil {
-		ResponseErrorWithMsg(c, code.InvalidParam, "page_num 参数错误")
+		ResponseBadRequest(c, "page_num 参数错误")
 		return
 	}
 	// 3. 调用 service 获取数据
@@ -126,7 +126,7 @@ func (cc *CommentController) GetCommentByID(c *gin.Context) {
 	// 2. 参数校验
 	commentID, err := strconv.Atoi(_commentID)
 	if err != nil {
-		ResponseErrorWithMsg(c, code.InvalidParam, "comment_id 参数错误")
+		ResponseBadRequest(c, "comment_id 参数错误")
 		return
 	}
 	// 3. 调用 service 获取数据

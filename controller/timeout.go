@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"github.com/gin-gonic/gin"
-	"net/http"
 	"time"
 )
 
@@ -20,7 +19,8 @@ func newTimeoutConfig(options ...TimeoutOption) *TimeoutConfig {
 		Timeout:    5 * time.Second,
 		TimeoutMsg: "请求超时",
 		ErrorHandleFunc: func(c *gin.Context) {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "请求超时"})
+			ResponseTimeout(c, "请求超时")
+			c.Abort()
 		},
 	}
 	for _, option := range options {

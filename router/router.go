@@ -38,6 +38,7 @@ func SetupRouter() *gin.Engine {
 
 		v1.POST("/login", authController.LoginHandler)
 		v1.POST("/signup", authController.SignUpHandler)
+		v1.POST("/logout", authController.LogoutHandler)
 		v1.GET("/refresh_token", authController.RefreshHandler)
 	}
 

@@ -19,7 +19,7 @@ var _ AuthServiceInterface = (*AuthService)(nil)
 
 type AuthServiceInterface interface {
 	LoginService(ctx context.Context, dto *DTO.LoginRequestDTO) (*DTO.LoginResponseDTO, *apiError.ApiError)
-	LogoutService(ctx context.Context, token string) *apiError.ApiError
+	LogoutService(ctx context.Context, token ...string) *apiError.ApiError
 	SignupService(ctx context.Context, dto *DTO.SignUpRequestDTO) *apiError.ApiError
 	RefreshTokenService(ctx context.Context, token string) (string, string, *apiError.ApiError)
 }
@@ -132,21 +132,24 @@ func (as *AuthService) RefreshTokenService(ctx context.Context, token string) (s
 
 }
 
-func (as *AuthService) LogoutService(ctx context.Context, token string) *apiError.ApiError {
-	myClaims, err := jwt.ParseToken(token)
-	if err != nil {
-		return &apiError.ApiError{
-			Code: code.UserRefreshTokenError,
-			Msg:  err.Error(),
+func (as *AuthService) LogoutService(ctx context.Context, token ...string) *apiError.ApiError {
+	for _, t := range token {
+		myClaims, err := jwt.ParseToken(t)
+		if err != nil {
+			return &apiError.ApiError{
+				Code: code.UserRefreshTokenError,
+				Msg:  err.Error(),
+			}
+		}
+
+		err = as.AuthCacheInterface.AddTokenToBlacklist(ctx, t, time.Until(myClaims.ExpiresAt.Time))
+		if err != nil {
+			return &apiError.ApiError{
+				Code: code.ServerError,
+				Msg:  "登出失败",
+			}
 		}
 	}
 
-	err = as.AuthCacheInterface.AddTokenToBlacklist(ctx, token, time.Until(myClaims.ExpiresAt.Time))
-	if err != nil {
-		return &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  "登出失败",
-		}
-	}
 	return nil
 }
