@@ -1,6 +1,6 @@
 port: 8080
 host: 127.0.0.1
-timeout: 10
+timeout: 10 # 服务超时时间，单位秒
 password_secret: "123456"
 
 mysql:
@@ -9,6 +9,12 @@ mysql:
   user: root
   password: 123456
   db: GinTalk
+  logger:
+    loglevel: 1        # 日志级别：1 - 不输出日志，2 - 只输出错误日志，3 - 输出警告和错误日志，4 - 输出所有日志
+    slowThreshold: 100 # 慢查询阈值，单位毫秒
+    ignoreRecordNotFoundError: true # 忽略记录未找到错误
+    colorful: true     # 是否彩色输出
+    parameterizedQueries: true # 是否参数化查询
 
 redis:
   host: 127.0.0.1

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"GinTalk/settings"
 	"context"
 	"github.com/gin-gonic/gin"
 	"time"
@@ -16,7 +17,7 @@ type TimeoutOption func(*TimeoutConfig)
 
 func newTimeoutConfig(options ...TimeoutOption) *TimeoutConfig {
 	defaultCfg := &TimeoutConfig{
-		Timeout:    5 * time.Second,
+		Timeout:    time.Duration(settings.GetConfig().Timeout) * time.Second,
 		TimeoutMsg: "请求超时",
 		ErrorHandleFunc: func(c *gin.Context) {
 			ResponseTimeout(c, "请求超时")
@@ -31,7 +32,7 @@ func newTimeoutConfig(options ...TimeoutOption) *TimeoutConfig {
 
 func WithTimeout(timeout time.Duration) TimeoutOption {
 	return func(cfg *TimeoutConfig) {
-		cfg.Timeout = timeout
+		cfg.Timeout = timeout * time.Second
 	}
 }
 

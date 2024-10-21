@@ -11,11 +11,20 @@ var conf = new(Settings)
 var once sync.Once
 
 type MysqlConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	DB       string `mapstructure:"db"`
+	Host               string `mapstructure:"host"`
+	Port               int    `mapstructure:"port"`
+	User               string `mapstructure:"user"`
+	Password           string `mapstructure:"password"`
+	DB                 string `mapstructure:"db"`
+	*MySQLLoggerConfig `mapstructure:"logger"`
+}
+
+type MySQLLoggerConfig struct {
+	SlowThreshold             int  `mapstructure:"slowThreshold"`
+	LogLevel                  int  `mapstructure:"logLevel"`
+	IgnoreRecordNotFoundError bool `mapstructure:"ignoreRecordNotFoundError"`
+	Colorful                  bool `mapstructure:"colorful"`
+	ParameterizedQueries      bool `mapstructure:"parameterizedQueries"`
 }
 
 type RedisConfig struct {
@@ -52,6 +61,12 @@ func initConfig() error {
 	// 设置mysql和redis的默认端口和host
 	viper.SetDefault("mysql.host", "localhost")
 	viper.SetDefault("mysql.port", 3306)
+
+	viper.SetDefault("mysql.logger.slowThreshold", 100)
+	viper.SetDefault("mysql.logger.logLevel", 1)
+	viper.SetDefault("mysql.logger.ignoreRecordNotFoundError", true)
+	viper.SetDefault("mysql.logger.colorful", true)
+
 	viper.SetDefault("redis.host", "localhost")
 	viper.SetDefault("redis.port", 6379)
 	viper.SetDefault("redis.db", 0)
