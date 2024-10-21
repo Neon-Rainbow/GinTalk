@@ -155,7 +155,7 @@ func (pd *PostDao) GetPostListByCommunityID(ctx context.Context, communityID int
 					post.author_id,
 					user.username,
 					post.community_id,
-					community.community_name,
+					community.community_name
 				FROM 
 					post
 				INNER JOIN 
