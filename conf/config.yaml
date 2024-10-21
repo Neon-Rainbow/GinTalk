@@ -10,7 +10,7 @@ mysql:
   password: 123456
   db: GinTalk
   logger:
-    loglevel: 1        # 日志级别：1 - 不输出日志，2 - 只输出错误日志，3 - 输出警告和错误日志，4 - 输出所有日志
+    loglevel: 3        # 日志级别：1 - 不输出日志，2 - 只输出错误日志，3 - 输出警告和错误日志，4 - 输出所有日志
     slowThreshold: 100 # 慢查询阈值，单位毫秒
     ignoreRecordNotFoundError: true # 忽略记录未找到错误
     colorful: true     # 是否彩色输出
@@ -22,7 +22,7 @@ redis:
   db: 0
 
 logger:
-  level: "warn"       # 日志级别：debug, info, warn, error, dpanic, panic, fatal
+  level: -1       # 日志级别：-1 - Debug, 0 - Info, 1 - Warn, 2 - Error, 3 - DPanic, 4 - Panic, 5 - Fatal
   format: "json"      # 输出格式：console 或 json
   outputPaths:        # 日志输出路径，可以是多个
     - "stdout"        # 输出到标准输出

@@ -34,7 +34,7 @@ type RedisConfig struct {
 }
 
 type LoggerConfig struct {
-	Level            string   `mapstructure:"level"`
+	Level            int      `mapstructure:"level"`
 	Format           string   `mapstructure:"format"`
 	OutputPaths      []string `mapstructure:"outputPaths"`
 	ErrorOutputPaths []string `mapstructure:"errorOutputPaths"`

@@ -36,11 +36,8 @@ func newLogger(cfg *settings.LoggerConfig) (*zap.Logger, error) {
 		}
 	}
 
-	// 设置日志级别
-	level := zapcore.InfoLevel
-	if err := level.UnmarshalText([]byte(cfg.Level)); err != nil {
-		return nil, fmt.Errorf("invalid log level: %w", err)
-	}
+	// 设置日志级别,从配置文件中读取
+	level := zapcore.Level(cfg.Level)
 
 	// 设置日志格式（JSON 或 Console）
 	var encoder zapcore.Encoder
