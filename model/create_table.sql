@@ -59,6 +59,7 @@ CREATE TABLE `post`
     `id`           bigint(20)                               NOT NULL AUTO_INCREMENT COMMENT '自增主键，唯一标识每条帖子记录',
     `post_id`      bigint(20)                               NOT NULL COMMENT '帖子ID，用于业务中的帖子唯一标识',
     `title`        varchar(128) COLLATE utf8mb4_general_ci  NOT NULL COMMENT '帖子标题',
+    `summary` varchar(120) COLLATE utf8mb4_general_ci NOT NULL  COMMENT '帖子摘要',
     `content`      varchar(8192) COLLATE utf8mb4_general_ci NOT NULL COMMENT '帖子内容，最大支持8192字符',
     `author_id`    bigint(20)                               NOT NULL COMMENT '作者的用户ID，用于关联用户表',
     `community_id` bigint(20)                               NOT NULL COMMENT '所属社区ID，用于关联社区表',

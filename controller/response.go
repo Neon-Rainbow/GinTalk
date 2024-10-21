@@ -21,6 +21,7 @@ func ResponseSuccess(c *gin.Context, data interface{}) {
 	})
 }
 
+// ResponseErrorWithCode 通过项目错误码来返回json数据
 func ResponseErrorWithCode(c *gin.Context, respCode code.RespCode) {
 	ResponseErrorWithMsg(c, respCode, respCode.GetMsg())
 	return

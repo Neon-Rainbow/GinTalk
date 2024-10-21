@@ -13,6 +13,7 @@ mysql:
 redis:
   host: 127.0.0.1
   port: 6379
+  db: 0
 
 logger:
   level: "warn"       # 日志级别：debug, info, warn, error, dpanic, panic, fatal

@@ -12,6 +12,8 @@ docker-compose up
 
 项目的具体配置信息在[配置文件](./conf/config.yaml)中,具体配置需求可以修改该文件
 
+项目需要在MySQL中建表,建表语句在[该文件](./model/create_table.sql)中
+
 ## 运行项目
 ```shell
 go run main.go

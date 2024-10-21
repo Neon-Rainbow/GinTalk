@@ -21,6 +21,7 @@ type MysqlConfig struct {
 type RedisConfig struct {
 	Host string `mapstructure:"host"`
 	Port int    `mapstructure:"port"`
+	DB   int    `mapstructure:"db"`
 }
 
 type LoggerConfig struct {
@@ -53,6 +54,7 @@ func initConfig() error {
 	viper.SetDefault("mysql.port", 3306)
 	viper.SetDefault("redis.host", "localhost")
 	viper.SetDefault("redis.port", 6379)
+	viper.SetDefault("redis.db", 0)
 	viper.SetDefault("port", 8080)
 	viper.SetDefault("host", "localhost")
 	viper.SetDefault("logger.level", "debug")
