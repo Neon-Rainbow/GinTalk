@@ -22,6 +22,7 @@ type Post struct {
 	CreateTime  time.Time `gorm:"column:create_time;default:CURRENT_TIMESTAMP;comment:帖子创建时间，默认当前时间" json:"create_time"`    // 帖子创建时间，默认当前时间
 	UpdateTime  time.Time `gorm:"column:update_time;default:CURRENT_TIMESTAMP;comment:帖子更新时间，每次更新时自动修改" json:"update_time"` // 帖子更新时间，每次更新时自动修改
 	DeleteTime  int       `gorm:"column:delete_time;comment:逻辑删除时间，NULL表示未删除" json:"delete_time"`                           // 逻辑删除时间，NULL表示未删除
+	Summary     string    `gorm:"column:summary;comment:帖子概览，显示在列表页或首页的简短内容" json:"summary"`                                // 帖子概览，显示在列表页或首页的简短内容
 }
 
 // TableName Post's table name

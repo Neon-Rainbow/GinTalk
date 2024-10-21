@@ -2,6 +2,7 @@ package service
 
 import (
 	"GinTalk/DTO"
+	"GinTalk/cache"
 	"GinTalk/dao"
 	"GinTalk/model"
 	"GinTalk/pkg"
@@ -11,25 +12,27 @@ import (
 	"GinTalk/pkg/snowflake"
 	"context"
 	"github.com/jinzhu/copier"
+	"time"
 )
 
 var _ AuthServiceInterface = (*AuthService)(nil)
 
 type AuthServiceInterface interface {
 	LoginService(ctx context.Context, dto *DTO.LoginRequestDTO) (*DTO.LoginResponseDTO, *apiError.ApiError)
+	LogoutService(ctx context.Context, token string) *apiError.ApiError
 	SignupService(ctx context.Context, dto *DTO.SignUpRequestDTO) *apiError.ApiError
 	RefreshTokenService(ctx context.Context, token string) (string, string, *apiError.ApiError)
 }
 
 type AuthService struct {
-	dao.IUserDo
 	dao.UserDaoInterface
+	cache.AuthCacheInterface
 }
 
-func NewAuthService(userDao dao.IUserDo, userDaoInterface dao.UserDaoInterface) AuthServiceInterface {
+func NewAuthService(userDaoInterface dao.UserDaoInterface, cache cache.AuthCacheInterface) AuthServiceInterface {
 	return &AuthService{
-		userDao,
 		userDaoInterface,
+		cache,
 	}
 }
 
@@ -54,6 +57,7 @@ func (as *AuthService) LoginService(ctx context.Context, dto *DTO.LoginRequestDT
 			Msg:  "生成token失败",
 		}
 	}
+
 	return &DTO.LoginResponseDTO{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -100,6 +104,13 @@ func (as *AuthService) RefreshTokenService(ctx context.Context, token string) (s
 			Msg:  err.Error(),
 		}
 	}
+	if myClaims.TokenType != jwt.RefreshTokenName {
+		return "", "", &apiError.ApiError{
+			Code: code.UserRefreshTokenError,
+			Msg:  "token类型错误",
+		}
+	}
+
 	accessToken, refreshToken, err := jwt.GenerateToken(myClaims.UserID, myClaims.Username)
 	if err != nil {
 		return "", "", &apiError.ApiError{
@@ -108,6 +119,34 @@ func (as *AuthService) RefreshTokenService(ctx context.Context, token string) (s
 		}
 	}
 
+	err = as.AuthCacheInterface.AddTokenToBlacklist(ctx, token, time.Until(myClaims.ExpiresAt.Time))
+
+	if err != nil {
+		return "", "", &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "刷新token失败",
+		}
+	}
+
 	return accessToken, refreshToken, nil
 
+}
+
+func (as *AuthService) LogoutService(ctx context.Context, token string) *apiError.ApiError {
+	myClaims, err := jwt.ParseToken(token)
+	if err != nil {
+		return &apiError.ApiError{
+			Code: code.UserRefreshTokenError,
+			Msg:  err.Error(),
+		}
+	}
+
+	err = as.AuthCacheInterface.AddTokenToBlacklist(ctx, token, time.Until(myClaims.ExpiresAt.Time))
+	if err != nil {
+		return &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "登出失败",
+		}
+	}
+	return nil
 }

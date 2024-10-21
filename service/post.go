@@ -16,8 +16,9 @@ var _ PostServiceInterface = (*PostService)(nil)
 
 type PostServiceInterface interface {
 	CreatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError
-	GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostDetail, *apiError.ApiError)
+	GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostSummary, *apiError.ApiError)
 	GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, *apiError.ApiError)
+	UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError
 }
 
 type PostService struct {
@@ -50,6 +51,10 @@ func (ps *PostService) CreatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 			Msg:  fmt.Sprintf("拷贝结构体失败: %v", err),
 		}
 	}
+
+	summary := TruncateByWords(post.Content, 100)
+	post.Summary = summary
+
 	err = ps.PostDaoInterface.CreatePost(ctx, &post)
 	if err != nil {
 		return &apiError.ApiError{
@@ -60,7 +65,7 @@ func (ps *PostService) CreatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 	return nil
 }
 
-func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostDetail, *apiError.ApiError) {
+func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostSummary, *apiError.ApiError) {
 	// pageNum 和 pageSize 不能小于等于 0
 	if pageNum <= 0 {
 		pageNum = 1
@@ -87,4 +92,22 @@ func (ps *PostService) GetPostDetail(ctx context.Context, postID int64) (*DTO.Po
 		}
 	}
 	return postDetail, nil
+}
+
+func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError {
+	post := model.Post{
+		PostID:  postDTO.PostID,
+		Title:   postDTO.Title,
+		Summary: TruncateByWords(postDTO.Content, 100),
+		Content: postDTO.Content,
+	}
+
+	err := ps.PostDaoInterface.UpdatePost(ctx, &post)
+	if err != nil {
+		return &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  fmt.Sprintf("更新帖子失败: %v", err),
+		}
+	}
+	return nil
 }

@@ -86,6 +86,7 @@ CREATE TABLE `comment`
     `id`          bigint(20)                      NOT NULL AUTO_INCREMENT COMMENT '自增主键，唯一标识每条评论记录',
     `comment_id`  bigint(20) unsigned             NOT NULL COMMENT '评论ID，用于业务中的评论唯一标识',
     `content`     text COLLATE utf8mb4_general_ci NOT NULL COMMENT '评论内容',
+    `summary` VARCHAR(256) COLLATE utf8mb4_general_ci NOT NULL COMMENT '评论概览',
     `post_id`     bigint(20)                      NOT NULL COMMENT '评论所属的帖子ID',
     `author_id`   bigint(20)                      NOT NULL COMMENT '评论作者的用户ID',
     `author_name` varchar(64)                     NOT NULL COMMENT '评论时的用户的名字',

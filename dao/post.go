@@ -4,6 +4,7 @@ import (
 	"GinTalk/DTO"
 	"GinTalk/model"
 	"context"
+	"fmt"
 	"gorm.io/gorm"
 )
 
@@ -11,8 +12,12 @@ var _ PostDaoInterface = (*PostDao)(nil)
 
 type PostDaoInterface interface {
 	CreatePost(ctx context.Context, post *model.Post) error
-	GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostDetail, error)
+	GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostSummary, error)
 	GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, error)
+
+	// UpdatePost 更新帖子
+	// 参数post中只需要有PostID, Title, Summary, Content四个字段
+	UpdatePost(ctx context.Context, post *model.Post) error
 }
 
 type PostDao struct {
@@ -24,11 +29,30 @@ func NewPostDao(db *gorm.DB) PostDaoInterface {
 }
 
 func (pd *PostDao) CreatePost(ctx context.Context, post *model.Post) error {
-	sqlStr1 := `INSERT INTO post (post_id, title, content, author_id, community_id) VALUES (?, ?, ?, ?, ?)`
+	if post.PostID == 0 {
+		return fmt.Errorf("postID 不能为空")
+	}
+	if post.Title == "" {
+		return fmt.Errorf("标题不能为空")
+	}
+	if post.Content == "" {
+		return fmt.Errorf("内容不能为空")
+	}
+	if post.Summary == "" {
+		return fmt.Errorf("摘要不能为空")
+	}
+	if post.AuthorID == 0 {
+		return fmt.Errorf("作者ID不能为空")
+	}
+	if post.CommunityID == 0 {
+		return fmt.Errorf("社区ID不能为空")
+	}
+
+	sqlStr1 := `INSERT INTO post (post_id, title,summary, content, author_id, community_id) VALUES (?, ?, ?,?, ?, ?)`
 	sqlStr2 := `INSERT INTO content_votes (post_id) VALUES (?)`
 
 	tx := pd.WithContext(ctx).Begin()
-	err := tx.WithContext(ctx).Exec(sqlStr1, post.PostID, post.Title, post.Content, post.AuthorID, post.CommunityID).Error
+	err := tx.WithContext(ctx).Exec(sqlStr1, post.PostID, post.Title, post.Summary, post.Content, post.AuthorID, post.CommunityID).Error
 	if err != nil {
 		tx.Rollback()
 	}
@@ -43,11 +67,11 @@ func (pd *PostDao) CreatePost(ctx context.Context, post *model.Post) error {
 	return nil
 }
 
-func (pd *PostDao) GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostDetail, error) {
+func (pd *PostDao) GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostSummary, error) {
 	sqlStr := `SELECT 
                     post.post_id,
                     post.title,
-                    post.content,
+                    post.summary,
                     post.author_id,
                     user.username,
                     post.community_id,
@@ -63,7 +87,7 @@ func (pd *PostDao) GetPostList(ctx context.Context, pageNum int, pageSize int) (
                     post.delete_time = 0 
                 LIMIT ? OFFSET ?`
 
-	var posts []*DTO.PostDetail
+	var posts []*DTO.PostSummary
 	err := pd.WithContext(ctx).Raw(sqlStr, pageSize, (pageNum-1)*pageSize).Scan(&posts).Error
 	if err != nil {
 		return nil, err
@@ -97,4 +121,25 @@ func (pd *PostDao) GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDe
 		return nil, err
 	}
 	return &post, nil
+}
+
+func (pd *PostDao) UpdatePost(ctx context.Context, post *model.Post) error {
+	if post.PostID == 0 {
+		return fmt.Errorf("postID 不能为空")
+	}
+	if post.Title == "" {
+		return fmt.Errorf("标题不能为空")
+	}
+	if post.Content == "" {
+		return fmt.Errorf("内容不能为空")
+	}
+	if post.Summary == "" {
+		return fmt.Errorf("摘要不能为空")
+	}
+	sqlStr := `UPDATE post SET title = ?, summary = ?,content = ? WHERE post_id = ?`
+	err := pd.WithContext(ctx).Exec(sqlStr, post.Title, post.Summary, post.Content, post.PostID).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }

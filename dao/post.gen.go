@@ -37,6 +37,7 @@ func newPost(db *gorm.DB, opts ...gen.DOOption) post {
 	_post.CreateTime = field.NewTime(tableName, "create_time")
 	_post.UpdateTime = field.NewTime(tableName, "update_time")
 	_post.DeleteTime = field.NewInt(tableName, "delete_time")
+	_post.Summary = field.NewString(tableName, "summary")
 
 	_post.fillFieldMap()
 
@@ -58,6 +59,7 @@ type post struct {
 	CreateTime  field.Time   // 帖子创建时间，默认当前时间
 	UpdateTime  field.Time   // 帖子更新时间，每次更新时自动修改
 	DeleteTime  field.Int    // 逻辑删除时间，NULL表示未删除
+	Summary     field.String // 帖子概览，显示在列表页或首页的简短内容
 
 	fieldMap map[string]field.Expr
 }
@@ -84,6 +86,7 @@ func (p *post) updateTableName(table string) *post {
 	p.CreateTime = field.NewTime(table, "create_time")
 	p.UpdateTime = field.NewTime(table, "update_time")
 	p.DeleteTime = field.NewInt(table, "delete_time")
+	p.Summary = field.NewString(table, "summary")
 
 	p.fillFieldMap()
 
@@ -108,7 +111,7 @@ func (p *post) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (p *post) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 10)
+	p.fieldMap = make(map[string]field.Expr, 11)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["post_id"] = p.PostID
 	p.fieldMap["title"] = p.Title
@@ -119,6 +122,7 @@ func (p *post) fillFieldMap() {
 	p.fieldMap["create_time"] = p.CreateTime
 	p.fieldMap["update_time"] = p.UpdateTime
 	p.fieldMap["delete_time"] = p.DeleteTime
+	p.fieldMap["summary"] = p.Summary
 }
 
 func (p post) clone(db *gorm.DB) post {

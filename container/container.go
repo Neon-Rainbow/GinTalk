@@ -2,8 +2,10 @@
 package container
 
 import (
+	"GinTalk/cache"
 	"GinTalk/dao"
 	"GinTalk/dao/MySQL"
+	"GinTalk/dao/Redis"
 	"GinTalk/service"
 	"context"
 	"sync"
@@ -26,7 +28,7 @@ func InitContainer() {
 
 		communityService = service.NewCommunityService(dao.Community.WithContext(context.Background()), dao.NewCommunityDao(MySQL.GetDB()))
 		postService = service.NewPostService(dao.Post.WithContext(context.Background()), dao.NewPostDao(MySQL.GetDB()))
-		authService = service.NewAuthService(dao.User.WithContext(context.Background()), dao.NewUserDao(MySQL.GetDB()))
+		authService = service.NewAuthService(dao.NewUserDao(MySQL.GetDB()), cache.NewAuthCache(Redis.GetRedisClient()))
 		voteService = service.NewVoteService(dao.Vote.WithContext(context.Background()), dao.NewVoteDao(MySQL.GetDB()))
 		commentService = service.NewCommentService(dao.NewCommentDao(MySQL.GetDB()))
 	})
