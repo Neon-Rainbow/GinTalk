@@ -79,7 +79,13 @@ func SetupRouter() *gin.Engine {
 
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
-			"msg": "404",
+			"msg": "请求的资源不存在",
+		})
+	})
+
+	r.NoMethod(func(c *gin.Context) {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{
+			"error": "请求方式非法",
 		})
 	})
 
