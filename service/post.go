@@ -17,7 +17,7 @@ var _ PostServiceInterface = (*PostService)(nil)
 
 type PostServiceInterface interface {
 	CreatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError
-	GetPostList(ctx context.Context, pageNum int, pageSize int, order int) ([]*DTO.PostSummary, *apiError.ApiError)
+	GetPostList(ctx context.Context, pageNum int, pageSize int, order int) ([]DTO.PostSummary, *apiError.ApiError)
 	GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, *apiError.ApiError)
 	UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError
 	GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, *apiError.ApiError)
@@ -82,7 +82,7 @@ func (ps *PostService) CreatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 	return nil
 }
 
-func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize int, order int) ([]*DTO.PostSummary, *apiError.ApiError) {
+func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize int, order int) ([]DTO.PostSummary, *apiError.ApiError) {
 	// pageNum 和 pageSize 不能小于等于 0
 	if pageNum <= 0 {
 		pageNum = 1
@@ -90,14 +90,23 @@ func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize in
 	if pageSize <= 0 {
 		pageSize = 10
 	}
-	// TODO:这里应该从Redis中获取帖子数据
-	list, err := ps.PostDaoInterface.GetPostList(ctx, pageNum, pageSize)
+
+	postIDs, err := ps.PostCacheInterface.GetPostIDsFromRedis(ctx, order, pageNum, pageSize)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
 			Msg:  fmt.Sprintf("获取帖子列表失败: %v", err),
 		}
 	}
+
+	list, err := ps.PostDaoInterface.GetPostListBatch(ctx, postIDs)
+	if err != nil {
+		return nil, &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  fmt.Sprintf("获取帖子列表失败: %v", err),
+		}
+	}
+
 	return list, nil
 }
 
@@ -127,6 +136,7 @@ func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 			Msg:  fmt.Sprintf("更新帖子失败: %v", err),
 		}
 	}
+
 	return nil
 }
 

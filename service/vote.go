@@ -2,12 +2,15 @@ package service
 
 import (
 	"GinTalk/DTO"
+	"GinTalk/cache"
 	"GinTalk/dao"
 	"GinTalk/model"
 	"GinTalk/pkg/apiError"
 	"GinTalk/pkg/code"
 	"context"
 	"fmt"
+	"go.uber.org/zap"
+	"log"
 	"time"
 )
 
@@ -18,14 +21,17 @@ type VoteServiceInterface interface {
 	RevokeVote(ctx context.Context, id int64, voteFor int, userID int64) *apiError.ApiError
 	MyVoteList(ctx context.Context, userID int64, voteFor, pageNum, pageSize int) ([]int64, *apiError.ApiError)
 	GetVoteCount(ctx context.Context, id int64, voteFor int) (int64, int64, *apiError.ApiError)
+
+	// GetBatchPostVoteCount 该函数用于批量查询帖子的投票数量
+	GetBatchPostVoteCount(ctx context.Context, ids []int64) ([]DTO.PostVotes, *apiError.ApiError)
 	CheckUserVoted(ctx context.Context, id []int64, voteFor int, userID int64) ([]model.Vote, *apiError.ApiError)
 	GetPostVoteDetail(ctx context.Context, postID int64, pageNum, pageSize int) ([]*DTO.UserVoteDetailDTO, *apiError.ApiError)
 	GetCommentVoteDetail(ctx context.Context, commentID int64, pageNum, pageSize int) ([]*DTO.UserVoteDetailDTO, *apiError.ApiError)
 }
 
 type VoteService struct {
-	dao.IVoteDo
 	dao.VoteDaoInterface
+	cache.VoteCacheInterface
 }
 
 /*
@@ -133,6 +139,17 @@ func (v *VoteService) GetVoteCount(ctx context.Context, id int64, voteFor int) (
 	return up, down, nil
 }
 
+func (v *VoteService) GetBatchPostVoteCount(ctx context.Context, ids []int64) ([]DTO.PostVotes, *apiError.ApiError) {
+	resp, err := v.VoteDaoInterface.GetBatchPostVoteCount(ctx, ids)
+	if err != nil {
+		return nil, &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "查询错误",
+		}
+	}
+	return resp, nil
+}
+
 // CheckUserVoted 批量查询用户是否投票过
 func (v *VoteService) CheckUserVoted(ctx context.Context, id []int64, voteFor int, userID int64) ([]model.Vote, *apiError.ApiError) {
 	votes, err := v.VoteDaoInterface.CheckUserVoted(ctx, id, voteFor, userID)
@@ -175,46 +192,87 @@ func (v *VoteService) GetCommentVoteDetail(ctx context.Context, commentID int64,
 	return resp, nil
 }
 
-func NewVoteService(voteDao dao.IVoteDo, voteDaoInterface dao.VoteDaoInterface) VoteServiceInterface {
+func NewVoteService(voteDaoInterface dao.VoteDaoInterface, voteCacheInterface cache.VoteCacheInterface) VoteServiceInterface {
 	return &VoteService{
-		voteDao,
 		voteDaoInterface,
+		voteCacheInterface,
 	}
 }
 
-func updatePostVoteCount(ctx context.Context, v *VoteService, id int64, voteFor int, caseNum int) {
-	ctx = context.Background()
+const (
+	MaxRetries   = 3               // 最大重试次数
+	InitialDelay = 2 * time.Second // 初始重试间隔
+)
 
-	var maxRetries = 3          // 最大重试次数
-	var delay = 2 * time.Second // 重试间隔时间
+// updatePostVoteCount 更新帖子的投票数,同时更新 Redis 的帖子热度
+// caseNum 用于区分不同的投票情况
+// 1. 之前没投过票，现在要投赞成票
+// 2. 之前投过反对票，现在要改为赞成票
+// 3. 之前投过赞成票，现在要取消
+// 4. 之前投过反对票，现在要取消
+// 5. 之前没投过票，现在要投反对票
+// 6. 之前投过赞成票，现在要改为反对票
+// 通过 caseNum 调用不同的 dao 方法
+// updatePostVoteCount 更新帖子投票数并更新 Redis 热度
+func updatePostVoteCount(ctx context.Context, v *VoteService, id int64, voteFor, caseNum int) {
+	// 创建带超时的 context，避免无限重试
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// 定义 caseNum 和对应 DAO 方法的映射
+	caseFuncMap := map[int]func(context.Context, int64, int) error{
+		1: v.VoteDaoInterface.ContentVoteCase1,
+		2: v.VoteDaoInterface.ContentVoteCase2,
+		3: v.VoteDaoInterface.ContentVoteCase3,
+		4: v.VoteDaoInterface.ContentVoteCase4,
+		5: v.VoteDaoInterface.ContentVoteCase5,
+		6: v.VoteDaoInterface.ContentVoteCase6,
+	}
+
+	// 检查是否有对应的处理函数
+	voteFunc, ok := caseFuncMap[caseNum]
+	if !ok {
+		zap.L().Error("Invalid case number", zap.Int("caseNum", caseNum))
+		return
+	}
+
+	// 执行带重试机制的投票逻辑
+	var attempt int
 	var err error
+	delay := InitialDelay
 
-	for attempt := 1; attempt <= maxRetries; attempt++ {
-		switch caseNum {
-		case 1:
-			err = v.VoteDaoInterface.ContentVoteCase1(ctx, id, voteFor)
-			break
-		case 2:
-			err = v.VoteDaoInterface.ContentVoteCase2(ctx, id, voteFor)
-			break
-		case 3:
-			err = v.VoteDaoInterface.ContentVoteCase3(ctx, id, voteFor)
-			break
-		case 4:
-			err = v.VoteDaoInterface.ContentVoteCase4(ctx, id, voteFor)
-			break
-		case 5:
-			err = v.VoteDaoInterface.ContentVoteCase5(ctx, id, voteFor)
-			break
-		case 6:
-			err = v.VoteDaoInterface.ContentVoteCase6(ctx, id, voteFor)
+	for attempt = 1; attempt <= MaxRetries; attempt++ {
+		err = voteFunc(ctx, id, voteFor) // 执行对应的 DAO 方法
+		if err == nil {
 			break
 		}
+		log.Printf("Attempt %d failed: %v. Retrying...", attempt, err)
+		time.Sleep(delay)
+		delay *= 2 // 指数退避，增加重试间隔
+	}
+
+	if err != nil {
+		zap.L().Error("Failed to update post vote count", zap.Error(err))
+		return
+	}
+
+	// 成功更新投票后，查询新的票数和创建时间
+	if voteFor == dao.VotePost {
+		up, down, err := v.VoteDaoInterface.GetContentVoteCount(ctx, id)
 		if err != nil {
-			time.Sleep(delay)
-			continue
-		} else {
+			log.Printf("Failed to get vote count: %v", err)
 			return
+		}
+
+		createTime, err := v.VoteDaoInterface.GetPostCreateTime(ctx, id)
+		if err != nil {
+			zap.L().Error("Failed to get post create time", zap.Error(err))
+			return
+		}
+
+		// 更新 Redis 中的帖子热度
+		if err := v.VoteCacheInterface.UpdatePostHot(ctx, id, int(up), int(down), createTime); err != nil {
+			zap.L().Error("Failed to update post hot score", zap.Error(err))
 		}
 	}
 }

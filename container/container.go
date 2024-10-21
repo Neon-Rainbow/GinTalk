@@ -29,7 +29,7 @@ func InitContainer() {
 		communityService = service.NewCommunityService(dao.Community.WithContext(context.Background()), dao.NewCommunityDao(MySQL.GetDB()))
 		postService = service.NewPostService(dao.NewPostDao(MySQL.GetDB()), cache.NewPostCache(Redis.GetRedisClient()))
 		authService = service.NewAuthService(dao.NewUserDao(MySQL.GetDB()), cache.NewAuthCache(Redis.GetRedisClient()))
-		voteService = service.NewVoteService(dao.Vote.WithContext(context.Background()), dao.NewVoteDao(MySQL.GetDB()))
+		voteService = service.NewVoteService(dao.NewVoteDao(MySQL.GetDB()), cache.NewVoteCache(Redis.GetRedisClient()))
 		commentService = service.NewCommentService(dao.NewCommentDao(MySQL.GetDB()))
 	})
 }

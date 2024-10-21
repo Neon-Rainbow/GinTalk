@@ -126,9 +126,10 @@ func (vh *VoteHandler) GetVoteCountHandler(c *gin.Context) {
 		return
 	}
 
-	ResponseSuccess(c, gin.H{
-		"up_count":   upCount,
-		"down_count": downCount,
+	ResponseSuccess(c, DTO.PostVotes{
+		PostID: int64(postID),
+		Up:     int(upCount),
+		Down:   int(downCount),
 	})
 }
 
@@ -254,5 +255,23 @@ func (vh *VoteHandler) GetCommentVoteDetailHandler(c *gin.Context) {
 	}
 
 	ResponseSuccess(c, voteList)
+	return
+}
+
+func (vh *VoteHandler) GetBatchPostVoteCount(c *gin.Context) {
+	type ids struct {
+		PostID []int64 `json:"post_id"`
+	}
+	var postIDs ids
+	if err := c.ShouldBindQuery(postIDs); err != nil {
+		ResponseErrorWithCode(c, code.InvalidParam)
+		return
+	}
+	resp, apiError := vh.VoteServiceInterface.GetBatchPostVoteCount(c.Request.Context(), postIDs.PostID)
+	if apiError != nil {
+		ResponseErrorWithApiError(c, apiError)
+		return
+	}
+	ResponseSuccess(c, resp)
 	return
 }

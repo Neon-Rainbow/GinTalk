@@ -12,7 +12,8 @@ var _ PostDaoInterface = (*PostDao)(nil)
 
 type PostDaoInterface interface {
 	CreatePost(ctx context.Context, post *model.Post) error
-	GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostSummary, error)
+	GetPostList(ctx context.Context, pageNum int, pageSize int) ([]DTO.PostSummary, error)
+	GetPostListBatch(ctx context.Context, postIDs []int64) ([]DTO.PostSummary, error)
 	GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, error)
 
 	// UpdatePost 更新帖子
@@ -70,7 +71,7 @@ func (pd *PostDao) CreatePost(ctx context.Context, post *model.Post) error {
 	return nil
 }
 
-func (pd *PostDao) GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostSummary, error) {
+func (pd *PostDao) GetPostList(ctx context.Context, pageNum int, pageSize int) ([]DTO.PostSummary, error) {
 	sqlStr := `SELECT 
                     post.post_id,
                     post.title,
@@ -90,8 +91,36 @@ func (pd *PostDao) GetPostList(ctx context.Context, pageNum int, pageSize int) (
                     post.delete_time = 0 
                 LIMIT ? OFFSET ?`
 
-	var posts []*DTO.PostSummary
+	var posts []DTO.PostSummary
 	err := pd.WithContext(ctx).Raw(sqlStr, pageSize, (pageNum-1)*pageSize).Scan(&posts).Error
+	if err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
+
+func (pd *PostDao) GetPostListBatch(ctx context.Context, postIDs []int64) ([]DTO.PostSummary, error) {
+	sqlStr := `SELECT 
+					post.post_id,
+					post.title,
+					post.summary,
+					post.author_id,
+					user.username,
+					post.community_id,
+					community.community_name,
+					post.status 
+				FROM 
+					post
+				INNER JOIN 
+					community ON community.community_id = post.community_id
+				INNER JOIN 
+					user ON user.user_id = post.author_id
+				WHERE 
+					post.post_id IN (?) 
+					AND post.delete_time = 0`
+
+	var posts []DTO.PostSummary
+	err := pd.WithContext(ctx).Raw(sqlStr, postIDs).Scan(&posts).Error
 	if err != nil {
 		return nil, err
 	}

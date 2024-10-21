@@ -5,6 +5,7 @@ import (
 	"GinTalk/model"
 	"context"
 	"gorm.io/gorm"
+	"time"
 )
 
 /*
@@ -72,6 +73,9 @@ type VoteDaoInterface interface {
 	// GetContentVoteCount 获取帖子的赞成票数和反对票数
 	GetContentVoteCount(ctx context.Context, postID int64) (int64, int64, error)
 
+	// GetBatchPostVoteCount 批量获取帖子的赞成票数和返回票数
+	GetBatchPostVoteCount(ctx context.Context, postID []int64) ([]DTO.PostVotes, error)
+
 	// GetCommentVoteCount 获取评论的赞成票数和反对票数
 	GetCommentVoteCount(ctx context.Context, commentID int64) (int64, int64, error)
 
@@ -83,10 +87,19 @@ type VoteDaoInterface interface {
 
 	// GetCommentVoteDetail 获取评论的投票详情
 	GetCommentVoteDetail(ctx context.Context, commentID int64, pageNum int, pageSize int) ([]DTO.UserVoteDetailDTO, error)
+
+	GetPostCreateTime(ctx context.Context, postID int64) (time.Time, error)
 }
 
 type VoteDao struct {
 	*gorm.DB
+}
+
+func (vd *VoteDao) GetPostCreateTime(ctx context.Context, postID int64) (time.Time, error) {
+	var createTime time.Time
+	sqlStr := `SELECT create_time FROM post WHERE post_id = ? AND delete_time = 0`
+	err := vd.WithContext(ctx).Raw(sqlStr, postID).Scan(&createTime).Error
+	return createTime, err
 }
 
 func NewVoteDao(db *gorm.DB) VoteDaoInterface {
@@ -294,6 +307,16 @@ func (vd *VoteDao) GetContentVoteCount(ctx context.Context, postID int64) (int64
 	sqlStr := `SELECT up, down FROM content_votes WHERE post_id = ? AND delete_time = 0`
 	err := vd.WithContext(ctx).Raw(sqlStr, postID).Scan(&vote).Error
 	return vote.Up, vote.Down, err
+}
+
+func (vd *VoteDao) GetBatchPostVoteCount(ctx context.Context, postID []int64) ([]DTO.PostVotes, error) {
+	var votes []DTO.PostVotes
+	sqlStr := `
+	SELECT post_id, up, down
+	FROM content_votes
+	WHERE post_id in (?) AND delete_time = 0`
+	err := vd.Exec(sqlStr, postID).Scan(&votes).Error
+	return votes, err
 }
 
 func (vd *VoteDao) GetCommentVoteCount(ctx context.Context, commentID int64) (int64, int64, error) {

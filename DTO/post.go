@@ -22,3 +22,16 @@ type PostSummary struct {
 	CommunityID   int64  `json:"community_id,omitempty" db:"community_id"`
 	CommunityName string `json:"community_name,omitempty" db:"community_name"`
 }
+
+// PostVotes 帖子投票内容
+// 用于获取帖子的投票内容
+type PostVotes struct {
+	PostID int64 `json:"post_id,omitempty" db:"post_id"`
+	Up     int   `json:"up" db:"up"`
+	Down   int   `json:"down" dp:"down"`
+}
+
+type PostSummaryVotes struct {
+	*PostSummary
+	*PostVotes
+}
