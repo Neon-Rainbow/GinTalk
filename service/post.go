@@ -2,6 +2,7 @@ package service
 
 import (
 	"GinTalk/DTO"
+	"GinTalk/cache"
 	"GinTalk/dao"
 	"GinTalk/model"
 	"GinTalk/pkg/apiError"
@@ -16,22 +17,22 @@ var _ PostServiceInterface = (*PostService)(nil)
 
 type PostServiceInterface interface {
 	CreatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError
-	GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostSummary, *apiError.ApiError)
+	GetPostList(ctx context.Context, pageNum int, pageSize int, order int) ([]*DTO.PostSummary, *apiError.ApiError)
 	GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, *apiError.ApiError)
 	UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError
 	GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, *apiError.ApiError)
 }
 
 type PostService struct {
-	dao.IPostDo
 	dao.PostDaoInterface
+	cache.PostCacheInterface
 }
 
 // NewPostService 使用依赖注入初始化 PostService
-func NewPostService(postDao dao.IPostDo, postDaoInterface dao.PostDaoInterface) PostServiceInterface {
+func NewPostService(postDaoInterface dao.PostDaoInterface, cache cache.PostCacheInterface) PostServiceInterface {
 	return &PostService{
-		IPostDo:          postDao,
-		PostDaoInterface: postDaoInterface,
+		PostDaoInterface:   postDaoInterface,
+		PostCacheInterface: cache,
 	}
 }
 
@@ -63,10 +64,25 @@ func (ps *PostService) CreatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 			Msg:  fmt.Sprintf("保存帖子失败: %v", err),
 		}
 	}
+
+	err = ps.PostCacheInterface.SavePostToRedis(ctx, &DTO.PostSummary{
+		PostID:      post.PostID,
+		Title:       post.Title,
+		Summary:     summary,
+		AuthorId:    post.AuthorID,
+		CommunityID: post.CommunityID,
+	})
+
+	if err != nil {
+		return &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  fmt.Sprintf("保存帖子失败: %v", err),
+		}
+	}
 	return nil
 }
 
-func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize int) ([]*DTO.PostSummary, *apiError.ApiError) {
+func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize int, order int) ([]*DTO.PostSummary, *apiError.ApiError) {
 	// pageNum 和 pageSize 不能小于等于 0
 	if pageNum <= 0 {
 		pageNum = 1
@@ -74,6 +90,7 @@ func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize in
 	if pageSize <= 0 {
 		pageSize = 10
 	}
+	// TODO:这里应该从Redis中获取帖子数据
 	list, err := ps.PostDaoInterface.GetPostList(ctx, pageNum, pageSize)
 	if err != nil {
 		return nil, &apiError.ApiError{

@@ -61,7 +61,11 @@ func (ph *PostHandler) CreatePostHandler(c *gin.Context) {
 // @Router /api/v1/post [get]
 func (ph *PostHandler) GetPostListHandler(c *gin.Context) {
 	pageNum, pageSize := getPageInfo(c)
-	postList, apiError := ph.PostServiceInterface.GetPostList(c.Request.Context(), pageNum, pageSize)
+	order, err := strconv.Atoi(c.Query("order"))
+	if err != nil {
+		ResponseBadRequest(c, "order 字段不正确")
+	}
+	postList, apiError := ph.PostServiceInterface.GetPostList(c.Request.Context(), pageNum, pageSize, order)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return

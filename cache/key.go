@@ -13,6 +13,9 @@ const (
 
 	// CommunityListTemplate 社区列表 key 模板
 	CommunityListTemplate = "community:list"
+
+	// PostRanking 在redis中存储帖子的热度
+	PostRanking = "post:ranking:id:%v"
 )
 
 // GenerateRedisKey 生成redis key
