@@ -21,20 +21,25 @@ const (
 )
 
 // hot 用于计算帖子的热度
-// Reddit 热度算法
+// Reddit 热度算法实现
 func hot(ups, downs int, date time.Time) float64 {
-	s := float64(ups - downs)
-	order := math.Log10(math.Max(math.Abs(s), 1))
+	s := float64(ups - downs)                     // 计算赞成票和反对票的差值
+	order := math.Log10(math.Max(math.Abs(s), 1)) // 计算票数的对数
+
 	var sign float64
 	if s > 0 {
 		sign = 1
-	} else if s == 0 {
-		sign = 0
-	} else {
+	} else if s < 0 {
 		sign = -1
+	} else {
+		sign = 0
 	}
-	seconds := float64(date.Second() - 1577808000)
-	return math.Round(sign*order + seconds/43200)
+
+	// 使用 Unix 时间戳进行时间计算
+	seconds := float64(date.Unix() - 1577808000)
+
+	// 计算热度，并四舍五入到最近的整数
+	return sign*order + seconds/45000
 }
 
 type PostCacheInterface interface {

@@ -32,14 +32,16 @@ func initDB(config *settings.MysqlConfig) (err error) {
 		logger.Config{
 			SlowThreshold:             time.Duration(config.SlowThreshold) * time.Millisecond, // 慢 SQL 阈值
 			LogLevel:                  logger.LogLevel(config.MySQLLoggerConfig.LogLevel),     // 级别
-			IgnoreRecordNotFoundError: config.MySQLLoggerConfig.IgnoreRecordNotFoundError,     // 忽略 ErrRecordNotFound 错误
+			IgnoreRecordNotFoundError: true,                                                   // 忽略 ErrRecordNotFound 错误
 			Colorful:                  config.MySQLLoggerConfig.Colorful,                      // 彩色打印
 			ParameterizedQueries:      config.MySQLLoggerConfig.ParameterizedQueries,          // 参数化查询
 		},
 	)
 
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: newLogger,
+		Logger:                 newLogger,
+		SkipDefaultTransaction: true,
+		PrepareStmt:            true,
 	})
 	if err != nil {
 		return err

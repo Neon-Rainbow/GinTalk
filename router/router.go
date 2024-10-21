@@ -3,6 +3,7 @@ package router
 import (
 	"GinTalk/controller"
 	"GinTalk/logger"
+	"GinTalk/settings"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -14,6 +15,17 @@ func SetupRouter() *gin.Engine {
 
 	// 日志中间件
 	r.Use(logger.GinLogger(zap.L())).Use(logger.GinRecovery(zap.L(), true))
+
+	switch settings.GetConfig().Mode {
+	case "debug":
+		gin.SetMode(gin.DebugMode)
+	case "release":
+		gin.SetMode(gin.ReleaseMode)
+	case "test":
+		gin.SetMode(gin.TestMode)
+	default:
+		gin.SetMode(gin.DebugMode)
+	}
 
 	v1 := r.Group("/api/v1").Use(
 		controller.LimitBodySizeMiddleware(),

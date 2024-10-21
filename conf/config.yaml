@@ -2,6 +2,7 @@ port: 8080
 host: 127.0.0.1
 timeout: 10 # 服务超时时间，单位秒
 password_secret: "123456"
+mode: "release" # 运行模式：debug, test, release
 
 mysql:
   host: 127.0.0.1
@@ -11,7 +12,7 @@ mysql:
   db: GinTalk
   logger:
     loglevel: 3        # 日志级别：1 - 不输出日志，2 - 只输出错误日志，3 - 输出警告和错误日志，4 - 输出所有日志
-    slowThreshold: 100 # 慢查询阈值，单位毫秒
+    slowThreshold: 500 # 慢查询阈值，单位毫秒
     ignoreRecordNotFoundError: true # 忽略记录未找到错误
     colorful: true     # 是否彩色输出
     parameterizedQueries: true # 是否参数化查询
@@ -22,7 +23,7 @@ redis:
   db: 0
 
 logger:
-  level: -1       # 日志级别：-1 - Debug, 0 - Info, 1 - Warn, 2 - Error, 3 - DPanic, 4 - Panic, 5 - Fatal
+  level: 4     # 日志级别：-1 - Debug, 0 - Info, 1 - Warn, 2 - Error, 3 - DPanic, 4 - Panic, 5 - Fatal
   format: "json"      # 输出格式：console 或 json
   outputPaths:        # 日志输出路径，可以是多个
     - "stdout"        # 输出到标准输出

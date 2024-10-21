@@ -148,7 +148,7 @@ CREATE TABLE `vote`
     `delete_time` bigint  NULL DEFAULT 0 COMMENT '逻辑删除时间，NULL表示未删除',
     PRIMARY KEY (`id`),
     UNIQUE INDEX `idx_post_id_user_id_delete_time` (`post_id`, `user_id`, `delete_time`),
-    INDEX `idx_comment_id_user_id_delete_time` (`comment_id`, `user_id`, `delete_time`)
+    UNIQUE INDEX `idx_comment_id_user_id_delete_time` (`comment_id`, `user_id`, `delete_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci;

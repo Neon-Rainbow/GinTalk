@@ -25,6 +25,12 @@ func initRedis(config *settings.RedisConfig) (err error) {
 		return err
 	}
 	redisClient = rdb
+
+	// 向redis中写入数据
+	err = rdb.Set(context.Background(), "key", "value", 0).Err()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

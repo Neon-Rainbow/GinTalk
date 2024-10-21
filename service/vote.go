@@ -216,7 +216,7 @@ const (
 // updatePostVoteCount 更新帖子投票数并更新 Redis 热度
 func updatePostVoteCount(ctx context.Context, v *VoteService, id int64, voteFor, caseNum int) {
 	// 创建带超时的 context，避免无限重试
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// 定义 caseNum 和对应 DAO 方法的映射

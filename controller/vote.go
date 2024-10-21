@@ -191,24 +191,16 @@ func (vh *VoteHandler) CheckUserVotedHandler(c *gin.Context) {
 // @Router /vote/post/detail [get]
 func (vh *VoteHandler) GetPostVoteDetailHandler(c *gin.Context) {
 	type PostID struct {
-		ID       int64 `form:"id" binding:"required"`
-		PageNum  int   `form:"page_num"`
-		PageSize int   `form:"page_size"`
+		ID int64 `form:"id" binding:"required"`
 	}
+	pageNum, pageSize := getPageInfo(c)
 	var postIds PostID
 	if err := c.ShouldBindQuery(&postIds); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	if postIds.PageNum == 0 {
-		postIds.PageNum = 1
-	}
 
-	if postIds.PageSize == 0 {
-		postIds.PageSize = 10
-	}
-
-	voteList, apiError := vh.VoteServiceInterface.GetPostVoteDetail(c.Request.Context(), postIds.ID, postIds.PageNum, postIds.PageSize)
+	voteList, apiError := vh.VoteServiceInterface.GetPostVoteDetail(c.Request.Context(), postIds.ID, pageNum, pageSize)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -231,24 +223,16 @@ func (vh *VoteHandler) GetPostVoteDetailHandler(c *gin.Context) {
 // @Router /vote/comment/detail [get]
 func (vh *VoteHandler) GetCommentVoteDetailHandler(c *gin.Context) {
 	type CommentID struct {
-		ID       int64 `form:"id" binding:"required"`
-		PageNum  int   `form:"page_num"`
-		PageSize int   `form:"page_size"`
+		ID int64 `form:"id" binding:"required"`
 	}
 	var commentIds CommentID
 	if err := c.ShouldBindQuery(&commentIds); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	if commentIds.PageNum == 0 {
-		commentIds.PageNum = 1
-	}
+	pageNum, pageSize := getPageInfo(c)
 
-	if commentIds.PageSize == 0 {
-		commentIds.PageSize = 10
-	}
-
-	voteList, apiError := vh.VoteServiceInterface.GetCommentVoteDetail(c.Request.Context(), commentIds.ID, commentIds.PageNum, commentIds.PageSize)
+	voteList, apiError := vh.VoteServiceInterface.GetCommentVoteDetail(c.Request.Context(), commentIds.ID, pageNum, pageSize)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return

@@ -37,7 +37,23 @@ func newLogger(cfg *settings.LoggerConfig) (*zap.Logger, error) {
 	}
 
 	// 设置日志级别,从配置文件中读取
-	level := zapcore.Level(cfg.Level)
+	var level zapcore.Level
+
+	logLevelMapper := map[int]zapcore.Level{
+		-1: zap.DebugLevel,
+		0:  zap.InfoLevel,
+		1:  zap.WarnLevel,
+		2:  zap.ErrorLevel,
+		3:  zap.DPanicLevel,
+		4:  zap.PanicLevel,
+		5:  zap.FatalLevel,
+	}
+
+	if l, ok := logLevelMapper[cfg.Level]; ok {
+		level = l
+	} else {
+		level = zap.InfoLevel
+	}
 
 	// 设置日志格式（JSON 或 Console）
 	var encoder zapcore.Encoder
