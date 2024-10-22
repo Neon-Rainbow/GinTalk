@@ -40,6 +40,7 @@ func newCommentRelation(db *gorm.DB, opts ...gen.DOOption) commentRelation {
 	return _commentRelation
 }
 
+// commentRelation 评论关系表：存储评论的层级关系
 type commentRelation struct {
 	commentRelationDo commentRelationDo
 

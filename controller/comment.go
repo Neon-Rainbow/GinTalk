@@ -30,8 +30,7 @@ func NewCommentController() CommentController {
 func (cc *CommentController) GetTopComments(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_postID := c.Query("post_id")
-	_pageSize := c.Query("page_size")
-	_pageNum := c.Query("page_num")
+	pageNum, pageSize := getPageInfo(c)
 
 	// 2. 参数校验
 	_postIDInt, err := strconv.Atoi(_postID)
@@ -40,16 +39,7 @@ func (cc *CommentController) GetTopComments(c *gin.Context) {
 		return
 	}
 	postID := int64(_postIDInt)
-	pageSize, err := strconv.Atoi(_pageSize)
-	if err != nil {
-		ResponseErrorWithMsg(c, code.InvalidParam, "page_size 参数错误")
-		return
-	}
-	pageNum, err := strconv.Atoi(_pageNum)
-	if err != nil {
-		ResponseErrorWithMsg(c, code.InvalidParam, "page_num 参数错误")
-		return
-	}
+
 	// 3. 调用 service 获取数据
 	commentList, apiError := cc.CommentService.GetTopComments(c, postID, pageSize, pageNum)
 	if apiError != nil {
@@ -75,8 +65,7 @@ func (cc *CommentController) GetSubComments(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_postID := c.Query("post_id")
 	_parentID := c.Query("parent_id")
-	_pageSize := c.Query("page_size")
-	_pageNum := c.Query("page_num")
+	pageNum, pageSize := getPageInfo(c)
 
 	// 2. 参数校验
 	_postIDInt, err := strconv.Atoi(_postID)
@@ -91,16 +80,6 @@ func (cc *CommentController) GetSubComments(c *gin.Context) {
 		return
 	}
 	parentID := int64(_parentIDInt)
-	pageSize, err := strconv.Atoi(_pageSize)
-	if err != nil {
-		ResponseBadRequest(c, "page_size 参数错误")
-		return
-	}
-	pageNum, err := strconv.Atoi(_pageNum)
-	if err != nil {
-		ResponseBadRequest(c, "page_num 参数错误")
-		return
-	}
 	// 3. 调用 service 获取数据
 	commentList, apiError := cc.CommentService.GetSubComments(c, postID, parentID, pageSize, pageNum)
 	if apiError != nil {

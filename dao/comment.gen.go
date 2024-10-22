@@ -30,6 +30,7 @@ func newComment(db *gorm.DB, opts ...gen.DOOption) comment {
 	_comment.ID = field.NewInt64(tableName, "id")
 	_comment.CommentID = field.NewInt64(tableName, "comment_id")
 	_comment.Content = field.NewString(tableName, "content")
+	_comment.Summary = field.NewString(tableName, "summary")
 	_comment.PostID = field.NewInt64(tableName, "post_id")
 	_comment.AuthorID = field.NewInt64(tableName, "author_id")
 	_comment.AuthorName = field.NewString(tableName, "author_name")
@@ -43,6 +44,7 @@ func newComment(db *gorm.DB, opts ...gen.DOOption) comment {
 	return _comment
 }
 
+// comment 评论表：存储用户对帖子的评论
 type comment struct {
 	commentDo commentDo
 
@@ -50,6 +52,7 @@ type comment struct {
 	ID         field.Int64  // 自增主键，唯一标识每条评论记录
 	CommentID  field.Int64  // 评论ID，用于业务中的评论唯一标识
 	Content    field.String // 评论内容
+	Summary    field.String // 评论概览
 	PostID     field.Int64  // 评论所属的帖子ID
 	AuthorID   field.Int64  // 评论作者的用户ID
 	AuthorName field.String // 评论时的用户的名字
@@ -76,6 +79,7 @@ func (c *comment) updateTableName(table string) *comment {
 	c.ID = field.NewInt64(table, "id")
 	c.CommentID = field.NewInt64(table, "comment_id")
 	c.Content = field.NewString(table, "content")
+	c.Summary = field.NewString(table, "summary")
 	c.PostID = field.NewInt64(table, "post_id")
 	c.AuthorID = field.NewInt64(table, "author_id")
 	c.AuthorName = field.NewString(table, "author_name")
@@ -107,10 +111,11 @@ func (c *comment) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *comment) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 10)
+	c.fieldMap = make(map[string]field.Expr, 11)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["comment_id"] = c.CommentID
 	c.fieldMap["content"] = c.Content
+	c.fieldMap["summary"] = c.Summary
 	c.fieldMap["post_id"] = c.PostID
 	c.fieldMap["author_id"] = c.AuthorID
 	c.fieldMap["author_name"] = c.AuthorName

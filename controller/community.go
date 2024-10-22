@@ -34,7 +34,7 @@ func (cc *CommunityHandler) CommunityHandler(c *gin.Context) {
 }
 
 func (cc *CommunityHandler) CommunityDetailHandler(c *gin.Context) {
-	_s := c.Param("ID")
+	_s := c.Param("id")
 
 	//string 转为 int32
 	_t, err := strconv.Atoi(_s)

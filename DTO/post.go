@@ -23,15 +23,15 @@ type PostSummary struct {
 	CommunityName string `json:"community_name,omitempty" db:"community_name"`
 }
 
-// PostVotes 帖子投票内容
+// PostVoteCounts 帖子投票内容
 // 用于获取帖子的投票内容
-type PostVotes struct {
+type PostVoteCounts struct {
 	PostID int64 `json:"post_id,omitempty" db:"post_id"`
-	Up     int   `json:"up" db:"up"`
-	Down   int   `json:"down" dp:"down"`
+	Vote   int64 `json:"vote" db:"vote"`
 }
 
-type PostSummaryVotes struct {
-	*PostSummary
-	*PostVotes
+type UserVotePostRelationsDTO struct {
+	UserID int64 `json:"user_id"`
+	PostID int64 `json:"post_id,omitempty"`
+	Vote   int   `json:"vote"`
 }

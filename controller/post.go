@@ -64,6 +64,7 @@ func (ph *PostHandler) GetPostListHandler(c *gin.Context) {
 	order, err := strconv.Atoi(c.Query("order"))
 	if err != nil {
 		ResponseBadRequest(c, "order 字段不正确")
+		return
 	}
 	postList, apiError := ph.PostServiceInterface.GetPostList(c.Request.Context(), pageNum, pageSize, order)
 	if apiError != nil {
@@ -111,7 +112,7 @@ func (ph *PostHandler) GetPostListByCommunityID(c *gin.Context) {
 // @Success 200 {object} Response
 // @Router /api/v1/post/{ID} [get]
 func (ph *PostHandler) GetPostDetailHandler(c *gin.Context) {
-	postID, err := strconv.ParseInt(c.Param("ID"), 10, 64)
+	postID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
@@ -153,9 +154,17 @@ func (ph *PostHandler) UpdatePostHandler(c *gin.Context) {
 	ResponseSuccess(c, nil)
 }
 
+// getPageInfo 获取分页信息
 func getPageInfo(c *gin.Context) (pageNum int, pageSize int) {
 	var err error
-	_n, _s := c.Query("page_num"), c.Query("page_size")
+	_n := c.Query("page_num")
+	_s := c.Query("page_size")
+	if _n == "" {
+		_n = c.Query("pageNum")
+	}
+	if _s == "" {
+		_s = c.Query("pageSize")
+	}
 	pageNum, err = strconv.Atoi(_n)
 	if err != nil || pageNum <= 0 {
 		pageNum = 1
@@ -163,6 +172,9 @@ func getPageInfo(c *gin.Context) (pageNum int, pageSize int) {
 	pageSize, err = strconv.Atoi(_s)
 	if err != nil || pageSize <= 0 {
 		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 20
 	}
 	return pageNum, pageSize
 }

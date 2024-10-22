@@ -7,11 +7,8 @@ type VoteDTO struct {
 	Vote    int   `json:"vote"`                        // -1: 踩 0: 取消 1: 赞
 }
 
-type MyVoteListDTO struct {
-	UserID   int64 `json:"user_id" form:"user_id"`
-	VoteFor  int   `json:"vote_for" form:"vote_for"`
-	PageNum  int   `json:"page_num" form:"page_num"`
-	PageSize int   `json:"page_size" form:"page_size"`
+type MyVoteListRequestDTO struct {
+	UserID int64 `json:"user_id" form:"user_id"`
 }
 
 type CheckVoteListDTO struct {
@@ -25,10 +22,14 @@ type VoteCountDTO struct {
 	VoteFor int   `json:"vote_for" form:"vote_for" binding:"required"`
 }
 
-type UserVoteDetailDTO struct {
-	UserID    int64  `json:"user_id"`
-	PostID    int64  `json:"post_id,omitempty"`
-	CommentID int64  `json:"comment_id,omitempty"`
-	Username  string `json:"username"`
-	Vote      int    `json:"vote"`
+type UserVotePostDetailDTO struct {
+	UserID   int64  `json:"user_id"`
+	PostID   int64  `json:"post_id,omitempty"`
+	Username string `json:"username"`
+	Vote     int    `json:"vote"`
+}
+
+type VotePostDTO struct {
+	PostID int64 `json:"post_id" binding:"required"`
+	UserID int64 `json:"user_id" binding:"required"`
 }

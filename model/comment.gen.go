@@ -10,11 +10,12 @@ import (
 
 const TableNameComment = "comment"
 
-// Comment mapped from table <comment>
+// Comment 评论表：存储用户对帖子的评论
 type Comment struct {
 	ID         int64     `gorm:"column:id;primaryKey;autoIncrement:true;comment:自增主键，唯一标识每条评论记录" json:"id"`                // 自增主键，唯一标识每条评论记录
 	CommentID  int64     `gorm:"column:comment_id;not null;comment:评论ID，用于业务中的评论唯一标识" json:"comment_id"`                   // 评论ID，用于业务中的评论唯一标识
 	Content    string    `gorm:"column:content;not null;comment:评论内容" json:"content"`                                      // 评论内容
+	Summary    string    `gorm:"column:summary;not null;comment:评论概览" json:"summary"`                                      // 评论概览
 	PostID     int64     `gorm:"column:post_id;not null;comment:评论所属的帖子ID" json:"post_id"`                                 // 评论所属的帖子ID
 	AuthorID   int64     `gorm:"column:author_id;not null;comment:评论作者的用户ID" json:"author_id"`                             // 评论作者的用户ID
 	AuthorName string    `gorm:"column:author_name;not null;comment:评论时的用户的名字" json:"author_name"`                         // 评论时的用户的名字

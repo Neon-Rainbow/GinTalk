@@ -21,20 +21,31 @@ const (
 )
 
 // hot 用于计算帖子的热度
-// Reddit 热度算法
-func hot(ups, downs int, date time.Time) float64 {
-	s := float64(ups - downs)
-	order := math.Log10(math.Max(math.Abs(s), 1))
+// Reddit 热度算法实现
+func hot(ups int, date time.Time) float64 {
+	downs := 0
+	s := float64(ups - downs)                     // 计算赞成票和反对票的差值
+	order := math.Log10(math.Max(math.Abs(s), 1)) // 计算票数的对数
+
 	var sign float64
 	if s > 0 {
 		sign = 1
-	} else if s == 0 {
-		sign = 0
-	} else {
+	} else if s < 0 {
 		sign = -1
+	} else {
+		sign = 0
 	}
-	seconds := float64(date.Second() - 1577808000)
-	return math.Round(sign*order + seconds/43200)
+
+	// 使用 Unix 时间戳进行时间计算
+	seconds := float64(date.Unix() - 1577808000)
+
+	// 计算热度，并四舍五入到最近的整数
+	ans := sign*order + seconds/45000
+	return ans
+}
+
+func deltaHot(oldUp, newUp int) float64 {
+	return math.Log10(max(float64(newUp), 1)) - math.Log10(max(float64(oldUp), 1))
 }
 
 type PostCacheInterface interface {
@@ -59,7 +70,7 @@ func (pc *PostCache) SavePostToRedis(ctx context.Context, summary *DTO.PostSumma
 	}
 
 	timestamp := float64(time.Now().Unix())
-	hotScore := hot(0, 0, time.Now())
+	hotScore := hot(0, time.Now())
 
 	if err := pc.ZAdd(ctx, GenerateRedisKey(PostTimeTemplate), &redis.Z{
 		Score:  timestamp,
@@ -102,57 +113,6 @@ func (pc *PostCache) GetPostIDsFromRedis(ctx context.Context, order, pageNum, pa
 	}
 	return resp, nil
 }
-
-// 目前不将帖子的内容存储到 Redis 中，只将 Redis 用于存储帖子的热度和时间
-
-//func (pc *PostCache) GetPostInfoFromRedis(ctx context.Context, order, pageNum, pageSize int) ([]DTO.PostSummary, error) {
-//	var key string
-//	if order == OrderByHot {
-//		key = GenerateRedisKey(PostRankingTemplate)
-//	} else {
-//		key = GenerateRedisKey(PostTimeTemplate)
-//	}
-//
-//	// 计算分页的开始和结束位置
-//	start := int64((pageNum - 1) * pageSize)
-//	end := start + int64(pageSize) - 1
-//
-//	// 从 Redis 有序集合中获取帖子 ID 列表
-//	postIDs, err := pc.ZRevRange(ctx, key, start, end).Result()
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	// 根据获取的 ID 列表逐个获取帖子内容
-//	var posts []DTO.PostSummary
-//	for _, id := range postIDs {
-//		data, err := pc.Get(ctx, GenerateRedisKey(PostSummaryTemplate, id)).Result()
-//		if err != nil {
-//			continue // 忽略无法获取的帖子
-//		}
-//		var post DTO.PostSummary
-//		if err := json.Unmarshal([]byte(data), &post); err != nil {
-//			continue
-//		}
-//		posts = append(posts, post)
-//	}
-//	return posts, nil
-//}
-//
-//func (pc *PostCache) UpdatePostInfo(ctx context.Context, postID int64, post *DTO.PostSummary) error {
-//	key := GenerateRedisKey(PostSummaryTemplate, post.PostID)
-//	data, err := json.Marshal(post)
-//	if err != nil {
-//		return err
-//	}
-//	// 更新帖子数据
-//	err = pc.Set(ctx, key, data, PostStoreTime).Err()
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
-//
 
 func NewPostCache(client *redis.Client) PostCacheInterface {
 	return &PostCache{

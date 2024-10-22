@@ -1,7 +1,6 @@
 USE `GinTalk`;
 
 DROP TABLE IF EXISTS `user`;
-
 CREATE TABLE `user`
 (
     `id`          bigint(20)                             NOT NULL AUTO_INCREMENT COMMENT '自增主键，唯一标识用户记录',
@@ -42,25 +41,24 @@ CREATE TABLE `community`
     UNIQUE INDEX `idx_community_name_delete_time` (`community_name`, `delete_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci;
+  COLLATE = utf8mb4_general_ci
+    COMMENT = '社区表：存储社区信息';
 INSERT INTO `community`
-VALUES ('1', '1', 'Go', 'Golang', '2016-11-01 08:10:10', '2016-11-01 08:10:10', NULL);
+VALUES ('1', '1', 'Go', 'Golang', '2016-11-01 08:10:10', '2016-11-01 08:10:10', 0);
 INSERT INTO `community`
-VALUES ('2', '2', 'leetcode', '刷题刷题刷题', '2020-01-01 08:00:00', '2020-01-01 08:00:00', NULL);
+VALUES ('2', '2', 'leetcode', '刷题刷题刷题', '2020-01-01 08:00:00', '2020-01-01 08:00:00', 0);
 INSERT INTO `community`
-VALUES ('3', '3', 'PUBG', '大吉大利，今晚吃鸡。', '2018-08-07 08:30:00', '2018-08-07 08:30:00', NULL);
+VALUES ('3', '3', 'PUBG', '大吉大利，今晚吃鸡。', '2018-08-07 08:30:00', '2018-08-07 08:30:00', 0);
 INSERT INTO `community`
-VALUES ('4', '4', 'LOL', '欢迎来到英雄联盟!', '2016-01-01 08:00:00', '2016-01-01 08:00:00', NULL);
+VALUES ('4', '4', 'LOL', '欢迎来到英雄联盟!', '2016-01-01 08:00:00', '2016-01-01 08:00:00',0);
 
 DROP TABLE IF EXISTS `post`;
-
 CREATE TABLE `post`
 (
     `id`           bigint(20)                               NOT NULL AUTO_INCREMENT COMMENT '自增主键，唯一标识每条帖子记录',
     `post_id`      bigint(20)                               NOT NULL COMMENT '帖子ID，用于业务中的帖子唯一标识',
     `title`        varchar(128) COLLATE utf8mb4_general_ci  NOT NULL COMMENT '帖子标题',
     `summary` varchar(120) COLLATE utf8mb4_general_ci NOT NULL  COMMENT '帖子摘要',
-    `content`      varchar(8192) COLLATE utf8mb4_general_ci NOT NULL COMMENT '帖子内容，最大支持8192字符',
     `author_id`    bigint(20)                               NOT NULL COMMENT '作者的用户ID，用于关联用户表',
     `community_id` bigint(20)                               NOT NULL COMMENT '所属社区ID，用于关联社区表',
     `status`       tinyint(4)                               NOT NULL DEFAULT '1' COMMENT '帖子状态：1-正常，0-隐藏或删除',
@@ -79,6 +77,23 @@ CREATE TABLE `post`
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci
     COMMENT = '帖子表：存储用户发布的帖子及其状态';
+
+DROP TABLE IF EXISTS `post_content`;
+CREATE TABLE `post_content`
+(
+    `post_id` bigint(20) NOT NULL COMMENT '帖子ID',
+    `content` text COLLATE utf8mb4_general_ci NOT NULL COMMENT '帖子内容',
+    `create_time` timestamp  NULL DEFAULT CURRENT_TIMESTAMP COMMENT '帖子内容创建时间，默认当前时间',
+    `update_time` timestamp  NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '帖子内容更新时间，每次更新时自动修改',
+    `delete_time` bigint  NULL DEFAULT 0 COMMENT '逻辑删除时间，NULL表示未删除',
+
+    PRIMARY KEY (`post_id`),
+    UNIQUE INDEX `idx_post_id_delete_time` (`post_id`, `delete_time`),
+    FULLTEXT INDEX `idx_content` (`content`)
+) ENGINE = Innodb
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_general_ci
+    COMMENT = '帖子内容表：存储帖子的详细内容';
 
 
 DROP TABLE IF EXISTS `comment`;
@@ -101,7 +116,8 @@ CREATE TABLE `comment`
     KEY `idx_author_Id` (`author_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci;
+  COLLATE = utf8mb4_general_ci
+    COMMENT = '评论表：存储用户对帖子的评论';
 
 DROP TABLE IF EXISTS `comment_relation`;
 CREATE TABLE `comment_relation`
@@ -119,51 +135,74 @@ CREATE TABLE `comment_relation`
     UNIQUE INDEX `idx_post_id_comment_id_delete_time` (`comment_id`, `delete_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci;
+  COLLATE = utf8mb4_general_ci
+    COMMENT = '评论关系表：存储评论的层级关系';
 
 DROP TABLE IF EXISTS `comment_votes`;
 CREATE TABLE `comment_votes`
 (
     `comment_id` bigint(20) NOT NULL COMMENT '投票所属的评论ID',
     `up`         int(11)    NOT NULL DEFAULT '0' COMMENT '赞数',
-    `down`       int(11)    NOT NULL DEFAULT '0' COMMENT '踩数',
     `create_time` timestamp  NULL     DEFAULT CURRENT_TIMESTAMP COMMENT '投票创建时间，默认当前时间',
     `update_time` timestamp  NULL     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '投票更新时间，每次更新时自动修改',
     `delete_time` bigint  NULL DEFAULT 0 COMMENT '逻辑删除时间，NULL表示未删除',
     UNIQUE INDEX `idx_comment_id_delete_time` (`comment_id`, `delete_time`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci;
+  COLLATE = utf8mb4_general_ci
+    COMMENT = '评论投票表：存储用户对评论的投票记录';
 
-DROP TABLE IF EXISTS `vote`;
-CREATE TABLE `vote`
+DROP TABLE IF EXISTS `vote_post`;
+CREATE TABLE `vote_post`
 (
     `id`          bigint(20) NOT NULL AUTO_INCREMENT COMMENT '自增主键，唯一标识每条投票记录',
     `post_id`     bigint(20) NOT NULL COMMENT '投票所属的帖子ID',
-    `comment_id` bigint(20) NOT NULL COMMENT '投票所属的评论ID',
     `user_id`     bigint(20) NOT NULL COMMENT '投票用户的用户ID',
-    `vote`        tinyint(4) NOT NULL COMMENT '投票类型：1-赞，-1-踩',
+    `vote`        tinyint(4) NOT NULL COMMENT '投票类型：1-赞',
     `create_time` timestamp  NULL DEFAULT CURRENT_TIMESTAMP COMMENT '投票创建时间，默认当前时间',
     `update_time` timestamp  NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '投票更新时间，每次更新时自动修改',
     `delete_time` bigint  NULL DEFAULT 0 COMMENT '逻辑删除时间，NULL表示未删除',
     PRIMARY KEY (`id`),
     UNIQUE INDEX `idx_post_id_user_id_delete_time` (`post_id`, `user_id`, `delete_time`),
-    INDEX `idx_comment_id_user_id_delete_time` (`comment_id`, `user_id`, `delete_time`)
+    INDEX `idx_post_id` (`post_id`),
+    INDEX `idx_user_id` (`user_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci;
+  COLLATE = utf8mb4_general_ci
+    COMMENT = '帖子投票表：存储用户对帖子的投票记录';
+
+DROP TABLE IF EXISTS `vote_comment`;
+CREATE TABLE `vote_comment`
+(
+    `id`          bigint(20) NOT NULL AUTO_INCREMENT COMMENT '自增主键，唯一标识每条投票记录',
+    `comment_id`     bigint(20) NOT NULL COMMENT '投票所属的评论ID',
+    `user_id`     bigint(20) NOT NULL COMMENT '投票用户的用户ID',
+    `vote`        tinyint(4) NOT NULL COMMENT '投票类型：1-赞',
+    `create_time` timestamp  NULL DEFAULT CURRENT_TIMESTAMP COMMENT '投票创建时间，默认当前时间',
+    `update_time` timestamp  NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '投票更新时间，每次更新时自动修改',
+    `delete_time` bigint  NULL DEFAULT 0 COMMENT '逻辑删除时间，NULL表示未删除',
+    PRIMARY KEY (`id`),
+    UNIQUE INDEX `idx_comment_id_user_id_delete_time` (`comment_id`, `user_id`, `delete_time`),
+    INDEX `idx_comment_id` (`comment_id`),
+    INDEX `idx_user_id` (`user_id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_general_ci
+    COMMENT = '评论投票表：存储用户对评论的投票记录';
+
 
 DROP TABLE IF EXISTS `content_votes`;
 CREATE TABLE `content_votes`
 (
     `post_id`     bigint(20) NOT NULL COMMENT '投票所属的帖子ID',
     `count`       int(11)    NOT NULL DEFAULT '0' COMMENT '投票总数',
-    `up`          int(11)    NOT NULL DEFAULT '0' COMMENT '赞数',
-    `down`        int(11)    NOT NULL DEFAULT '0' COMMENT '踩数',
+    `vote`          int(11)    NOT NULL DEFAULT '0' COMMENT '赞数',
     `create_time` timestamp  NULL     DEFAULT CURRENT_TIMESTAMP COMMENT '投票创建时间，默认当前时间',
     `update_time` timestamp  NULL     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '投票更新时间，每次更新时自动修改',
     `delete_time` bigint  NULL DEFAULT 0 COMMENT '逻辑删除时间，NULL表示未删除',
-    UNIQUE INDEX `idx_post_id_delete_time` (`post_id`, `delete_time`)
+    UNIQUE INDEX `idx_post_id_delete_time` (`post_id`, `delete_time`),
+INDEX `idx_post_id` (`post_id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci;
+  COLLATE = utf8mb4_general_ci
+    COMMENT = '帖子投票表：存储用户对帖子的投票记录';

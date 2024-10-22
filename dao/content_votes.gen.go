@@ -29,8 +29,7 @@ func newContentVote(db *gorm.DB, opts ...gen.DOOption) contentVote {
 	_contentVote.ALL = field.NewAsterisk(tableName)
 	_contentVote.PostID = field.NewInt64(tableName, "post_id")
 	_contentVote.Count = field.NewInt32(tableName, "count")
-	_contentVote.Up = field.NewInt32(tableName, "up")
-	_contentVote.Down = field.NewInt32(tableName, "down")
+	_contentVote.Vote = field.NewInt32(tableName, "vote")
 	_contentVote.CreateTime = field.NewTime(tableName, "create_time")
 	_contentVote.UpdateTime = field.NewTime(tableName, "update_time")
 	_contentVote.DeleteTime = field.NewInt(tableName, "delete_time")
@@ -40,14 +39,14 @@ func newContentVote(db *gorm.DB, opts ...gen.DOOption) contentVote {
 	return _contentVote
 }
 
+// contentVote 帖子投票表：存储用户对帖子的投票记录
 type contentVote struct {
 	contentVoteDo contentVoteDo
 
 	ALL        field.Asterisk
 	PostID     field.Int64 // 投票所属的帖子ID
 	Count      field.Int32 // 投票总数
-	Up         field.Int32 // 赞数
-	Down       field.Int32 // 踩数
+	Vote       field.Int32 // 赞数
 	CreateTime field.Time  // 投票创建时间，默认当前时间
 	UpdateTime field.Time  // 投票更新时间，每次更新时自动修改
 	DeleteTime field.Int   // 逻辑删除时间，NULL表示未删除
@@ -69,8 +68,7 @@ func (c *contentVote) updateTableName(table string) *contentVote {
 	c.ALL = field.NewAsterisk(table)
 	c.PostID = field.NewInt64(table, "post_id")
 	c.Count = field.NewInt32(table, "count")
-	c.Up = field.NewInt32(table, "up")
-	c.Down = field.NewInt32(table, "down")
+	c.Vote = field.NewInt32(table, "vote")
 	c.CreateTime = field.NewTime(table, "create_time")
 	c.UpdateTime = field.NewTime(table, "update_time")
 	c.DeleteTime = field.NewInt(table, "delete_time")
@@ -100,11 +98,10 @@ func (c *contentVote) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *contentVote) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 7)
+	c.fieldMap = make(map[string]field.Expr, 6)
 	c.fieldMap["post_id"] = c.PostID
 	c.fieldMap["count"] = c.Count
-	c.fieldMap["up"] = c.Up
-	c.fieldMap["down"] = c.Down
+	c.fieldMap["vote"] = c.Vote
 	c.fieldMap["create_time"] = c.CreateTime
 	c.fieldMap["update_time"] = c.UpdateTime
 	c.fieldMap["delete_time"] = c.DeleteTime
