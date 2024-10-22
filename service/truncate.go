@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	MaxSummaryLength = 50
+	MaxSummaryLength = 100
 )
 
 // TruncateByWords 按单词截断字符串

@@ -40,7 +40,8 @@ func hot(ups int, date time.Time) float64 {
 	seconds := float64(date.Unix() - 1577808000)
 
 	// 计算热度，并四舍五入到最近的整数
-	return sign*order + seconds/45000
+	ans := sign*order + seconds/45000
+	return ans
 }
 
 func deltaHot(oldUp, newUp int) float64 {

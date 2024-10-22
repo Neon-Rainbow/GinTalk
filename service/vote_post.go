@@ -169,8 +169,6 @@ const (
 // updatePostVoteCount 更新帖子的投票数,同时更新 Redis 的帖子热度
 func updatePostVoteCount(ctx context.Context, v *VoteService, postID int64, voteChange int) {
 	// 创建带超时的 context，避免无限重试
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
 
 	// 执行带重试机制的投票逻辑
 	var attempt int
@@ -200,6 +198,7 @@ func updatePostVoteCount(ctx context.Context, v *VoteService, postID int64, vote
 	newUp := int(newDetail.Vote)
 	oldUp := newUp - voteChange
 
+	// err = v.VoteCacheInterface.UpdatePostHot(ctx, postID, newUp, createTime)
 	err = v.VoteCacheInterface.AddPostHot(ctx, postID, oldUp, newUp)
 	if err != nil {
 		zap.L().Error("Failed to update post hot score", zap.Error(err))

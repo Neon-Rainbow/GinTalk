@@ -29,7 +29,6 @@ func newCommentVote(db *gorm.DB, opts ...gen.DOOption) commentVote {
 	_commentVote.ALL = field.NewAsterisk(tableName)
 	_commentVote.CommentID = field.NewInt64(tableName, "comment_id")
 	_commentVote.Up = field.NewInt32(tableName, "up")
-	_commentVote.Down = field.NewInt32(tableName, "down")
 	_commentVote.CreateTime = field.NewTime(tableName, "create_time")
 	_commentVote.UpdateTime = field.NewTime(tableName, "update_time")
 	_commentVote.DeleteTime = field.NewInt(tableName, "delete_time")
@@ -46,7 +45,6 @@ type commentVote struct {
 	ALL        field.Asterisk
 	CommentID  field.Int64 // 投票所属的评论ID
 	Up         field.Int32 // 赞数
-	Down       field.Int32 // 踩数
 	CreateTime field.Time  // 投票创建时间，默认当前时间
 	UpdateTime field.Time  // 投票更新时间，每次更新时自动修改
 	DeleteTime field.Int   // 逻辑删除时间，NULL表示未删除
@@ -68,7 +66,6 @@ func (c *commentVote) updateTableName(table string) *commentVote {
 	c.ALL = field.NewAsterisk(table)
 	c.CommentID = field.NewInt64(table, "comment_id")
 	c.Up = field.NewInt32(table, "up")
-	c.Down = field.NewInt32(table, "down")
 	c.CreateTime = field.NewTime(table, "create_time")
 	c.UpdateTime = field.NewTime(table, "update_time")
 	c.DeleteTime = field.NewInt(table, "delete_time")
@@ -98,10 +95,9 @@ func (c *commentVote) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *commentVote) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 6)
+	c.fieldMap = make(map[string]field.Expr, 5)
 	c.fieldMap["comment_id"] = c.CommentID
 	c.fieldMap["up"] = c.Up
-	c.fieldMap["down"] = c.Down
 	c.fieldMap["create_time"] = c.CreateTime
 	c.fieldMap["update_time"] = c.UpdateTime
 	c.fieldMap["delete_time"] = c.DeleteTime

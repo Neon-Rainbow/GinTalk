@@ -139,7 +139,7 @@ func (p *PostVoteDao) GetPostCreateTime(ctx context.Context, postID int64) (time
 		SELECT create_time
 		FROM post
 		WHERE post_id = ?`
-	err := p.DB.WithContext(ctx).Exec(sqlStr, postID).Scan(&createTime).Error
+	err := p.DB.WithContext(ctx).Raw(sqlStr, postID).Scan(&createTime).Error
 	return createTime, err
 }
 
