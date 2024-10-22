@@ -1,0 +1,211 @@
+package service
+
+import (
+	"GinTalk/DTO"
+	"GinTalk/cache"
+	"GinTalk/dao"
+	"GinTalk/pkg/apiError"
+	"GinTalk/pkg/code"
+	"context"
+	"fmt"
+	"go.uber.org/zap"
+	"time"
+)
+
+var _ VotePostServiceInterface = (*VoteService)(nil)
+
+type VotePostServiceInterface interface {
+	// VotePost 用于投票
+	VotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError
+
+	// RevokeVotePost 用于取消投票
+	RevokeVotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError
+
+	// MyVotePostList 用于查询用户投票过的帖子
+	MyVotePostList(ctx context.Context, userID int64, pageNum, pageSize int) ([]int64, *apiError.ApiError)
+
+	// GetVotePostCount 用于查询帖子的投票数量
+	GetVotePostCount(ctx context.Context, postID int64) (*DTO.PostVoteCounts, *apiError.ApiError)
+
+	// GetBatchPostVoteCount 该函数用于批量查询帖子的投票数量
+	GetBatchPostVoteCount(ctx context.Context, postIDs []int64) ([]DTO.PostVoteCounts, *apiError.ApiError)
+
+	// CheckUserPostVoted 批量查询用户是否投票过
+	CheckUserPostVoted(ctx context.Context, postIDs []int64, userID int64) ([]DTO.UserVotePostRelationsDTO, *apiError.ApiError)
+
+	// GetPostVoteDetail 获取帖子的投票详情
+	GetPostVoteDetail(ctx context.Context, postID int64, pageNum, pageSize int) ([]DTO.UserVotePostDetailDTO, *apiError.ApiError)
+}
+
+type VoteService struct {
+	dao.PostVoteDaoInterface
+	cache.VoteCacheInterface
+}
+
+func (v *VoteService) VotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError {
+	isVoted, err := v.PostVoteDaoInterface.CheckUserVotedPost(ctx, postID, userID)
+	if err != nil {
+		return &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "查询投票记录失败",
+		}
+	}
+	if isVoted {
+		return &apiError.ApiError{
+			Code: code.InvalidParam,
+			Msg:  "已经投过票",
+		}
+	}
+
+	err = v.PostVoteDaoInterface.AddPostVote(ctx, postID, userID)
+	if err != nil {
+		return &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "投票失败",
+		}
+	}
+
+	go updatePostVoteCount(context.Background(), v, postID, 1)
+
+	return nil
+}
+
+// RevokeVotePost 取消投票
+func (v *VoteService) RevokeVotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError {
+	isVoted, err := v.PostVoteDaoInterface.CheckUserVotedPost(ctx, postID, userID)
+	if err != nil {
+		return &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "查询投票记录失败",
+		}
+	}
+	if !isVoted {
+		return &apiError.ApiError{
+			Code: code.InvalidParam,
+			Msg:  "未投过票",
+		}
+	}
+
+	err = v.PostVoteDaoInterface.RevokePostVote(ctx, postID, userID)
+	if err != nil {
+		return &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "取消投票失败",
+		}
+	}
+
+	go updatePostVoteCount(context.Background(), v, postID, -1)
+	return nil
+}
+
+func (v *VoteService) MyVotePostList(ctx context.Context, userID int64, pageNum, pageSize int) ([]int64, *apiError.ApiError) {
+	voteRecord, err := v.PostVoteDaoInterface.GetUserVoteList(ctx, userID, pageNum, pageSize)
+	if err != nil {
+		return nil, &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "查询投票记录失败",
+		}
+	}
+	return voteRecord, nil
+}
+
+func (v *VoteService) GetVotePostCount(ctx context.Context, postID int64) (*DTO.PostVoteCounts, *apiError.ApiError) {
+	up, err := v.PostVoteDaoInterface.GetPostVoteCount(ctx, postID)
+	if err != nil {
+		return nil, &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "查询错误",
+		}
+	}
+	return up, nil
+}
+
+func (v *VoteService) GetBatchPostVoteCount(ctx context.Context, postIDs []int64) ([]DTO.PostVoteCounts, *apiError.ApiError) {
+	resp, err := v.PostVoteDaoInterface.GetBatchPostVoteCount(ctx, postIDs)
+	if err != nil {
+		return nil, &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "查询错误",
+		}
+	}
+	return resp, nil
+}
+
+// CheckUserPostVoted 批量查询用户是否投票过
+func (v *VoteService) CheckUserPostVoted(ctx context.Context, postIDs []int64, userID int64) ([]DTO.UserVotePostRelationsDTO, *apiError.ApiError) {
+	votes, err := v.PostVoteDaoInterface.CheckUserVoted(ctx, postIDs, userID)
+	if err != nil {
+		return nil, &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  fmt.Sprintf("批量查询投票记录失败: %v", err),
+		}
+	}
+	return votes, nil
+}
+
+func (v *VoteService) GetPostVoteDetail(ctx context.Context, postID int64, pageNum, pageSize int) ([]DTO.UserVotePostDetailDTO, *apiError.ApiError) {
+	voteDetails, err := v.PostVoteDaoInterface.GetPostVoteDetail(ctx, postID, pageNum, pageSize)
+	if err != nil {
+		return nil, &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  fmt.Sprintf("查询投票详情失败: %v", err),
+		}
+	}
+	return voteDetails, nil
+}
+
+func NewVoteService(voteDaoInterface dao.PostVoteDaoInterface, voteCacheInterface cache.VoteCacheInterface) VotePostServiceInterface {
+	return &VoteService{
+		voteDaoInterface,
+		voteCacheInterface,
+	}
+}
+
+const (
+	MaxRetries   = 3               // 最大重试次数
+	InitialDelay = 2 * time.Second // 初始重试间隔
+)
+
+// updatePostVoteCount 更新帖子的投票数,同时更新 Redis 的帖子热度
+func updatePostVoteCount(ctx context.Context, v *VoteService, postID int64, voteChange int) {
+	// 创建带超时的 context，避免无限重试
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// 执行带重试机制的投票逻辑
+	var attempt int
+	var err error
+	delay := InitialDelay
+
+	for attempt = 1; attempt <= MaxRetries; attempt++ {
+		switch voteChange {
+		case 1:
+			err = v.PostVoteDaoInterface.AddContentVoteUp(ctx, postID)
+		case -1:
+			err = v.PostVoteDaoInterface.SubContentVoteUp(ctx, postID)
+		}
+		if err == nil {
+			break
+		}
+		time.Sleep(delay)
+		delay *= 2
+	}
+
+	// 更新帖子的热度
+	newDetail, err := v.PostVoteDaoInterface.GetPostVoteCount(ctx, postID)
+	if err != nil {
+		zap.L().Error("Failed to get post vote count", zap.Error(err))
+		return
+	}
+	newUp := int(newDetail.Vote)
+	oldUp := newUp - voteChange
+
+	err = v.VoteCacheInterface.AddPostHot(ctx, postID, oldUp, newUp)
+	if err != nil {
+		zap.L().Error("Failed to update post hot score", zap.Error(err))
+		return
+	}
+
+	zap.L().Info("Update post vote count successfully", zap.Int64("postID", postID), zap.Int("vote", voteChange))
+	return
+}

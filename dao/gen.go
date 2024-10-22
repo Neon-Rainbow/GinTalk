@@ -23,8 +23,10 @@ var (
 	Community       *community
 	ContentVote     *contentVote
 	Post            *post
+	PostContent     *postContent
 	User            *user
-	Vote            *vote
+	VoteComment     *voteComment
+	VotePost        *votePost
 )
 
 func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
@@ -35,8 +37,10 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	Community = &Q.Community
 	ContentVote = &Q.ContentVote
 	Post = &Q.Post
+	PostContent = &Q.PostContent
 	User = &Q.User
-	Vote = &Q.Vote
+	VoteComment = &Q.VoteComment
+	VotePost = &Q.VotePost
 }
 
 func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
@@ -48,8 +52,10 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		Community:       newCommunity(db, opts...),
 		ContentVote:     newContentVote(db, opts...),
 		Post:            newPost(db, opts...),
+		PostContent:     newPostContent(db, opts...),
 		User:            newUser(db, opts...),
-		Vote:            newVote(db, opts...),
+		VoteComment:     newVoteComment(db, opts...),
+		VotePost:        newVotePost(db, opts...),
 	}
 }
 
@@ -62,8 +68,10 @@ type Query struct {
 	Community       community
 	ContentVote     contentVote
 	Post            post
+	PostContent     postContent
 	User            user
-	Vote            vote
+	VoteComment     voteComment
+	VotePost        votePost
 }
 
 func (q *Query) Available() bool { return q.db != nil }
@@ -77,8 +85,10 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		Community:       q.Community.clone(db),
 		ContentVote:     q.ContentVote.clone(db),
 		Post:            q.Post.clone(db),
+		PostContent:     q.PostContent.clone(db),
 		User:            q.User.clone(db),
-		Vote:            q.Vote.clone(db),
+		VoteComment:     q.VoteComment.clone(db),
+		VotePost:        q.VotePost.clone(db),
 	}
 }
 
@@ -99,8 +109,10 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		Community:       q.Community.replaceDB(db),
 		ContentVote:     q.ContentVote.replaceDB(db),
 		Post:            q.Post.replaceDB(db),
+		PostContent:     q.PostContent.replaceDB(db),
 		User:            q.User.replaceDB(db),
-		Vote:            q.Vote.replaceDB(db),
+		VoteComment:     q.VoteComment.replaceDB(db),
+		VotePost:        q.VotePost.replaceDB(db),
 	}
 }
 
@@ -111,8 +123,10 @@ type queryCtx struct {
 	Community       ICommunityDo
 	ContentVote     IContentVoteDo
 	Post            IPostDo
+	PostContent     IPostContentDo
 	User            IUserDo
-	Vote            IVoteDo
+	VoteComment     IVoteCommentDo
+	VotePost        IVotePostDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
@@ -123,8 +137,10 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		Community:       q.Community.WithContext(ctx),
 		ContentVote:     q.ContentVote.WithContext(ctx),
 		Post:            q.Post.WithContext(ctx),
+		PostContent:     q.PostContent.WithContext(ctx),
 		User:            q.User.WithContext(ctx),
-		Vote:            q.Vote.WithContext(ctx),
+		VoteComment:     q.VoteComment.WithContext(ctx),
+		VotePost:        q.VotePost.WithContext(ctx),
 	}
 }
 

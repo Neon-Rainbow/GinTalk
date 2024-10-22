@@ -14,7 +14,7 @@ func SetupRouter() *gin.Engine {
 	r := gin.New()
 
 	// 日志中间件
-	r.Use(logger.GinLogger(zap.L())).Use(logger.GinRecovery(zap.L(), true))
+	r.Use(logger.GinLogger(zap.L()), logger.GinRecovery(zap.L(), true))
 
 	switch settings.GetConfig().Mode {
 	case "debug":
@@ -59,6 +59,7 @@ func SetupRouter() *gin.Engine {
 	postController := controller.NewPostHandler()
 	voteController := controller.NewVoteHandle()
 	commentController := controller.NewCommentController()
+	voteCommentController := controller.NewVoteCommentController()
 	{
 		v1.GET("/community", communityController.CommunityHandler)
 		v1.GET("/community/:id", communityController.CommunityDetailHandler)
@@ -69,14 +70,13 @@ func SetupRouter() *gin.Engine {
 		v1.GET("/post/:id", postController.GetPostDetailHandler)
 		v1.PUT("/post", postController.UpdatePostHandler)
 
-		v1.POST("/vote", voteController.VoteHandler)
-		v1.DELETE("/vote", voteController.RevokeVoteHandler)
-		v1.GET("/vote/:id", voteController.GetVoteCountHandler)
-		v1.GET("/vote/user", voteController.MyVoteListHandler)
-		v1.GET("/vote/list", voteController.CheckUserVotedHandler)
-		v1.GET("/vote/batch", voteController.GetBatchPostVoteCount)
+		v1.POST("/vote/post", voteController.VotePostHandler)
+		v1.DELETE("/vote/post", voteController.RevokeVoteHandler)
+		v1.GET("/vote/post/:id", voteController.GetVoteCountHandler)
+		v1.GET("/vote/post/user", voteController.MyVoteListHandler)
+		v1.GET("/vote/post/list", voteController.CheckUserVotedHandler)
+		v1.GET("/vote/post/batch", voteController.GetBatchPostVoteCount)
 		v1.GET("/vote/post/detail", voteController.GetPostVoteDetailHandler)
-		v1.GET("/vote/comment/detail", voteController.GetCommentVoteDetailHandler)
 
 		v1.GET("/comment/top", commentController.GetTopComments)
 		v1.GET("/comment/sub", commentController.GetSubComments)
@@ -88,6 +88,11 @@ func SetupRouter() *gin.Engine {
 		v1.GET("/comment/sub/count", commentController.GetSubCommentCount)
 		v1.GET("/comment/user/count", commentController.GetCommentCountByUserID)
 		v1.GET("/comment", commentController.GetCommentByCommentID)
+
+		v1.POST("/vote/comment", voteCommentController.VoteCommentController)
+		v1.DELETE("/vote/comment", voteCommentController.RemoveVoteCommentController)
+		v1.GET("/vote/comment", voteCommentController.GetVoteCommentController)
+		v1.GET("/vote/comment/list", voteCommentController.GetVoteCommentListController)
 	}
 
 	r.NoRoute(func(c *gin.Context) {

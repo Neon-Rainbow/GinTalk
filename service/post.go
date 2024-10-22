@@ -4,13 +4,11 @@ import (
 	"GinTalk/DTO"
 	"GinTalk/cache"
 	"GinTalk/dao"
-	"GinTalk/model"
 	"GinTalk/pkg/apiError"
 	"GinTalk/pkg/code"
 	"GinTalk/pkg/snowflake"
 	"context"
 	"fmt"
-	"github.com/jinzhu/copier"
 )
 
 var _ PostServiceInterface = (*PostService)(nil)
@@ -44,20 +42,12 @@ func (ps *PostService) CreatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 			Msg:  fmt.Sprintf("生成帖子ID失败: %v", err),
 		}
 	}
+
 	postDTO.PostID = postID
-	var post model.Post
-	err = copier.Copy(&post, postDTO)
-	if err != nil {
-		return &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  fmt.Sprintf("拷贝结构体失败: %v", err),
-		}
-	}
 
-	summary := TruncateByWords(post.Content, 100)
-	post.Summary = summary
+	summary := TruncateByWords(postDTO.Content, MaxSummaryLength)
 
-	err = ps.PostDaoInterface.CreatePost(ctx, &post)
+	err = ps.PostDaoInterface.CreatePost(ctx, postDTO, summary)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -65,20 +55,17 @@ func (ps *PostService) CreatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 		}
 	}
 
-	err = ps.PostCacheInterface.SavePostToRedis(ctx, &DTO.PostSummary{
-		PostID:      post.PostID,
-		Title:       post.Title,
+	postSummary := &DTO.PostSummary{
+		PostID:      postID,
+		CommunityID: postDTO.CommunityID,
+		Title:       postDTO.Title,
+		AuthorId:    postDTO.AuthorId,
 		Summary:     summary,
-		AuthorId:    post.AuthorID,
-		CommunityID: post.CommunityID,
-	})
-
-	if err != nil {
-		return &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  fmt.Sprintf("保存帖子失败: %v", err),
-		}
 	}
+
+	// 将帖子 ID 存入 Redis
+	err = ps.PostCacheInterface.SavePostToRedis(ctx, postSummary)
+
 	return nil
 }
 
@@ -122,21 +109,24 @@ func (ps *PostService) GetPostDetail(ctx context.Context, postID int64) (*DTO.Po
 }
 
 func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError {
-	post := model.Post{
-		PostID:  postDTO.PostID,
-		Title:   postDTO.Title,
-		Summary: TruncateByWords(postDTO.Content, 100),
-		Content: postDTO.Content,
+	if postDTO.PostID == 0 {
+		return &apiError.ApiError{
+			Code: code.InvalidParam,
+			Msg:  "postID 不能为空",
+		}
 	}
 
-	err := ps.PostDaoInterface.UpdatePost(ctx, &post)
+	fmt.Printf("截断前: %s\n", postDTO.Content)
+	summary := TruncateByWords(postDTO.Content, MaxSummaryLength)
+	fmt.Printf("截断后: %s\n", summary)
+
+	err := ps.PostDaoInterface.UpdatePost(ctx, postDTO, summary)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
 			Msg:  fmt.Sprintf("更新帖子失败: %v", err),
 		}
 	}
-
 	return nil
 }
 

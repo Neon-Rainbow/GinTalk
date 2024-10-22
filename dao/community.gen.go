@@ -40,6 +40,7 @@ func newCommunity(db *gorm.DB, opts ...gen.DOOption) community {
 	return _community
 }
 
+// community 社区表：存储社区信息
 type community struct {
 	communityDo communityDo
 

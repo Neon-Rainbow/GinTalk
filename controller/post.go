@@ -64,6 +64,7 @@ func (ph *PostHandler) GetPostListHandler(c *gin.Context) {
 	order, err := strconv.Atoi(c.Query("order"))
 	if err != nil {
 		ResponseBadRequest(c, "order 字段不正确")
+		return
 	}
 	postList, apiError := ph.PostServiceInterface.GetPostList(c.Request.Context(), pageNum, pageSize, order)
 	if apiError != nil {
@@ -111,7 +112,7 @@ func (ph *PostHandler) GetPostListByCommunityID(c *gin.Context) {
 // @Success 200 {object} Response
 // @Router /api/v1/post/{ID} [get]
 func (ph *PostHandler) GetPostDetailHandler(c *gin.Context) {
-	postID, err := strconv.ParseInt(c.Param("ID"), 10, 64)
+	postID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return

@@ -2,6 +2,8 @@ package main
 
 import (
 	"GinTalk/container"
+	"GinTalk/dao/MySQL"
+	"GinTalk/dao/Redis"
 	"GinTalk/logger"
 	"GinTalk/pkg/snowflake"
 	"GinTalk/router"
@@ -20,6 +22,9 @@ func main() {
 
 	// 初始化IOC容器
 	container.InitContainer()
+
+	defer MySQL.Close()
+	defer Redis.Close()
 
 	// 初始化路由
 	r := router.SetupRouter()

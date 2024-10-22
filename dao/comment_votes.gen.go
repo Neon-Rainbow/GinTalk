@@ -39,6 +39,7 @@ func newCommentVote(db *gorm.DB, opts ...gen.DOOption) commentVote {
 	return _commentVote
 }
 
+// commentVote 评论投票表：存储用户对评论的投票记录
 type commentVote struct {
 	commentVoteDo commentVoteDo
 

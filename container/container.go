@@ -12,12 +12,13 @@ import (
 )
 
 var (
-	once             sync.Once
-	communityService service.CommunityServiceInterface
-	postService      service.PostServiceInterface
-	authService      service.AuthServiceInterface
-	voteService      service.VoteServiceInterface
-	commentService   service.CommentServiceInterface
+	once               sync.Once
+	communityService   service.CommunityServiceInterface
+	postService        service.PostServiceInterface
+	authService        service.AuthServiceInterface
+	voteService        service.VotePostServiceInterface
+	commentService     service.CommentServiceInterface
+	voteCommentService service.VoteCommentServiceInterface
 )
 
 // InitContainer 初始化容器
@@ -29,8 +30,9 @@ func InitContainer() {
 		communityService = service.NewCommunityService(dao.Community.WithContext(context.Background()), dao.NewCommunityDao(MySQL.GetDB()))
 		postService = service.NewPostService(dao.NewPostDao(MySQL.GetDB()), cache.NewPostCache(Redis.GetRedisClient()))
 		authService = service.NewAuthService(dao.NewUserDao(MySQL.GetDB()), cache.NewAuthCache(Redis.GetRedisClient()))
-		voteService = service.NewVoteService(dao.NewVoteDao(MySQL.GetDB()), cache.NewVoteCache(Redis.GetRedisClient()))
+		voteService = service.NewVoteService(dao.NewPostVoteDao(MySQL.GetDB()), cache.NewVoteCache(Redis.GetRedisClient()))
 		commentService = service.NewCommentService(dao.NewCommentDao(MySQL.GetDB()))
+		voteCommentService = service.NewVoteCommentService(dao.NewCommentVoteImpl(MySQL.GetDB()))
 	})
 }
 
@@ -57,7 +59,7 @@ func GetAuthService() service.AuthServiceInterface {
 	return authService
 }
 
-func GetVoteService() service.VoteServiceInterface {
+func GetVoteService() service.VotePostServiceInterface {
 	if voteService == nil {
 		panic("vote service is not initialized")
 	}
@@ -69,4 +71,11 @@ func GetCommentService() service.CommentServiceInterface {
 		panic("comment service is not initialized")
 	}
 	return commentService
+}
+
+func GetVoteCommentService() service.VoteCommentServiceInterface {
+	if voteCommentService == nil {
+		panic("vote comment service is not initialized")
+	}
+	return voteCommentService
 }

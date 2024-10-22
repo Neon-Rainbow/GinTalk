@@ -10,7 +10,7 @@ import (
 
 const TableNameCommentRelation = "comment_relation"
 
-// CommentRelation mapped from table <comment_relation>
+// CommentRelation 评论关系表：存储评论的层级关系
 type CommentRelation struct {
 	PostID     int64     `gorm:"column:post_id;not null;comment:评论所属的帖子ID" json:"post_id"`                                   // 评论所属的帖子ID
 	CommentID  int64     `gorm:"column:comment_id;primaryKey;comment:评论ID, 用于关联评论表" json:"comment_id"`                       // 评论ID, 用于关联评论表

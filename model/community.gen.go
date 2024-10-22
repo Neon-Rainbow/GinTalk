@@ -10,7 +10,7 @@ import (
 
 const TableNameCommunity = "community"
 
-// Community mapped from table <community>
+// Community 社区表：存储社区信息
 type Community struct {
 	ID            int32     `gorm:"column:id;primaryKey;autoIncrement:true" json:"id"`
 	CommunityID   int32     `gorm:"column:community_id;not null" json:"community_id"`
