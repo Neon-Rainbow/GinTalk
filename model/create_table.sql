@@ -1,3 +1,5 @@
+CREATE DATABASE `GinTalk`;
+
 USE `GinTalk`;
 
 DROP TABLE IF EXISTS `user`;
