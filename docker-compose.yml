@@ -9,6 +9,7 @@ services:
       MYSQL_DATABASE: GinTalk
       MYSQL_USER: docker
       MYSQL_PASSWORD: 123456
+    command: --innodb-buffer-pool-size=2G
     ports:
       - "3306:3306"
     volumes:
