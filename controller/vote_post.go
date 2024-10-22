@@ -15,7 +15,7 @@ type VoteHandler struct {
 
 func NewVoteHandle() *VoteHandler {
 	return &VoteHandler{
-		container.GetVoteService(),
+		container.GetVotePostService(),
 	}
 }
 

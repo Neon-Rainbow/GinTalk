@@ -7,7 +7,6 @@ import (
 	"GinTalk/dao/MySQL"
 	"GinTalk/dao/Redis"
 	"GinTalk/service"
-	"context"
 	"sync"
 )
 
@@ -16,7 +15,7 @@ var (
 	communityService   service.CommunityServiceInterface
 	postService        service.PostServiceInterface
 	authService        service.AuthServiceInterface
-	voteService        service.VotePostServiceInterface
+	votePostService    service.VotePostServiceInterface
 	commentService     service.CommentServiceInterface
 	voteCommentService service.VoteCommentServiceInterface
 )
@@ -27,10 +26,10 @@ func InitContainer() {
 		// 初始化 DAO 层
 		dao.SetDefault(MySQL.GetDB())
 
-		communityService = service.NewCommunityService(dao.Community.WithContext(context.Background()), dao.NewCommunityDao(MySQL.GetDB()))
+		communityService = service.NewCommunityService(dao.NewCommunityDao(MySQL.GetDB()))
 		postService = service.NewPostService(dao.NewPostDao(MySQL.GetDB()), cache.NewPostCache(Redis.GetRedisClient()))
 		authService = service.NewAuthService(dao.NewUserDao(MySQL.GetDB()), cache.NewAuthCache(Redis.GetRedisClient()))
-		voteService = service.NewVoteService(dao.NewPostVoteDao(MySQL.GetDB()), cache.NewVoteCache(Redis.GetRedisClient()))
+		votePostService = service.NewVoteService(dao.NewPostVoteDao(MySQL.GetDB()), cache.NewVoteCache(Redis.GetRedisClient()))
 		commentService = service.NewCommentService(dao.NewCommentDao(MySQL.GetDB()))
 		voteCommentService = service.NewVoteCommentService(dao.NewCommentVoteImpl(MySQL.GetDB()))
 	})
@@ -59,11 +58,11 @@ func GetAuthService() service.AuthServiceInterface {
 	return authService
 }
 
-func GetVoteService() service.VotePostServiceInterface {
-	if voteService == nil {
+func GetVotePostService() service.VotePostServiceInterface {
+	if votePostService == nil {
 		panic("vote service is not initialized")
 	}
-	return voteService
+	return votePostService
 }
 
 func GetCommentService() service.CommentServiceInterface {

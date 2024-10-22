@@ -9,6 +9,9 @@ import (
 	"GinTalk/pkg/snowflake"
 	"context"
 	"fmt"
+	"go.uber.org/zap"
+	"slices"
+	"time"
 )
 
 var _ PostServiceInterface = (*PostService)(nil)
@@ -64,7 +67,12 @@ func (ps *PostService) CreatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 	}
 
 	// 将帖子 ID 存入 Redis
-	err = ps.PostCacheInterface.SavePostToRedis(ctx, postSummary)
+	go func() {
+		err := ps.PostCacheInterface.SavePostToRedis(ctx, postSummary)
+		if err != nil {
+			zap.L().Error("保存帖子到 Redis 失败", zap.Error(err))
+		}
+	}()
 
 	return nil
 }
@@ -86,7 +94,8 @@ func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize in
 		}
 	}
 
-	list, err := ps.PostDaoInterface.GetPostListBatch(ctx, postIDs)
+	// 首先从 Redis 中获取帖子列表
+	redisList, missingIDs, err := ps.PostCacheInterface.GetPostSummaryFromRedis(ctx, postIDs)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -94,7 +103,25 @@ func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize in
 		}
 	}
 
-	return list, nil
+	list, err := ps.PostDaoInterface.GetPostListBatch(ctx, missingIDs)
+	if err != nil {
+		return nil, &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  fmt.Sprintf("获取帖子列表失败: %v", err),
+		}
+	}
+
+	// 将缺失的帖子存入 Redis
+	go func() {
+		for _, post := range list {
+			err := ps.PostCacheInterface.SavePostToRedis(ctx, &post)
+			if err != nil {
+				zap.L().Error("保存帖子到 Redis 失败", zap.Error(err))
+			}
+		}
+	}()
+
+	return slices.Concat(redisList, list), nil
 }
 
 func (ps *PostService) GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, *apiError.ApiError) {
@@ -109,6 +136,17 @@ func (ps *PostService) GetPostDetail(ctx context.Context, postID int64) (*DTO.Po
 }
 
 func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError {
+	// 延迟双删, 保证数据一致性
+
+	// 第一次删除 Redis 中数据
+	err := ps.PostCacheInterface.DeleteRedisPost(ctx, postDTO.PostID)
+	if err != nil {
+		return &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  fmt.Sprintf("删除Redis数据失败, %v", err.Error()),
+		}
+	}
+
 	if postDTO.PostID == 0 {
 		return &apiError.ApiError{
 			Code: code.InvalidParam,
@@ -120,13 +158,25 @@ func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 	summary := TruncateByWords(postDTO.Content, MaxSummaryLength)
 	fmt.Printf("截断后: %s\n", summary)
 
-	err := ps.PostDaoInterface.UpdatePost(ctx, postDTO, summary)
+	err = ps.PostDaoInterface.UpdatePost(ctx, postDTO, summary)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
 			Msg:  fmt.Sprintf("更新帖子失败: %v", err),
 		}
 	}
+
+	// 等待 2s 后第二次删除 Redis 中数据
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
+		defer cancel()
+		time.Sleep(2 * time.Second)
+		err := ps.PostCacheInterface.DeleteRedisPost(ctx, postDTO.PostID)
+		if err != nil {
+			zap.L().Error("删除 Redis 数据失败")
+		}
+	}()
+
 	return nil
 }
 

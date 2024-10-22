@@ -51,6 +51,8 @@ func deltaHot(oldUp, newUp int) float64 {
 type PostCacheInterface interface {
 	SavePostToRedis(ctx context.Context, summary *DTO.PostSummary) error
 	GetPostIDsFromRedis(ctx context.Context, order, pageNum, pageSize int) ([]int64, error)
+	GetPostSummaryFromRedis(ctx context.Context, postID []int64) (postList []DTO.PostSummary, missingIDs []int64, err error)
+	DeleteRedisPost(ctx context.Context, postID int64) error
 }
 
 type PostCache struct {
@@ -112,6 +114,37 @@ func (pc *PostCache) GetPostIDsFromRedis(ctx context.Context, order, pageNum, pa
 		resp[i] = int64(_t)
 	}
 	return resp, nil
+}
+
+func (pc *PostCache) GetPostSummaryFromRedis(ctx context.Context, postID []int64) ([]DTO.PostSummary, []int64, error) {
+	strKeys := make([]string, len(postID))
+	for i, key := range postID {
+		strKeys[i] = GenerateRedisKey(PostSummaryTemplate, key)
+	}
+	values, err := pc.MGet(ctx, strKeys...).Result()
+	if err != nil {
+		return nil, nil, err
+	}
+	result := make([]DTO.PostSummary, len(values))
+	missingIDs := make([]int64, 0)
+	for i, value := range values {
+		if value == nil {
+			missingIDs = append(missingIDs, postID[i])
+			continue
+		}
+		if err := json.Unmarshal([]byte(value.(string)), &result[i]); err != nil {
+			return nil, nil, err
+		}
+	}
+	return result, missingIDs, nil
+}
+
+func (pc *PostCache) DeleteRedisPost(ctx context.Context, postID int64) error {
+	key := GenerateRedisKey(PostSummaryTemplate, postID)
+	if err := pc.Del(ctx, key).Err(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewPostCache(client *redis.Client) PostCacheInterface {

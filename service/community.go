@@ -21,14 +21,12 @@ type CommunityServiceInterface interface {
 
 // CommunityService 是 CommunityServiceInterface 的实现
 type CommunityService struct {
-	dao.ICommunityDo
 	dao.CommunityDaoInterface
 }
 
 // NewCommunityService 使用依赖注入初始化 CommunityService
-func NewCommunityService(communityDao dao.ICommunityDo, communityDaoInterface dao.CommunityDaoInterface) CommunityServiceInterface {
+func NewCommunityService(communityDaoInterface dao.CommunityDaoInterface) CommunityServiceInterface {
 	return &CommunityService{
-		ICommunityDo:          communityDao,
 		CommunityDaoInterface: communityDaoInterface,
 	}
 }
