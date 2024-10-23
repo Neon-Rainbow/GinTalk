@@ -40,8 +40,8 @@ func initDB(config *settings.MysqlConfig) (err error) {
 
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger:                 newLogger,
-		SkipDefaultTransaction: true,
-		PrepareStmt:            true,
+		SkipDefaultTransaction: false,
+		PrepareStmt:            false,
 	})
 	if err != nil {
 		return err

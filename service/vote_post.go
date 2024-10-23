@@ -4,6 +4,8 @@ import (
 	"GinTalk/DTO"
 	"GinTalk/cache"
 	"GinTalk/dao"
+	"GinTalk/kafka"
+	"GinTalk/model"
 	"GinTalk/pkg/apiError"
 	"GinTalk/pkg/code"
 	"context"
@@ -40,6 +42,7 @@ type VotePostServiceInterface interface {
 type VoteService struct {
 	dao.PostVoteDaoInterface
 	cache.VoteCacheInterface
+	kafka.KafkaInterface
 }
 
 func (v *VoteService) VotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError {
@@ -65,7 +68,15 @@ func (v *VoteService) VotePost(ctx context.Context, postID int64, userID int64) 
 		}
 	}
 
-	go updatePostVoteCount(context.Background(), v, postID, 1)
+	msg := model.KafkaVotePostModel{
+		PostId: fmt.Sprintf("%d", postID),
+	}
+	go func() {
+		err := v.KafkaInterface.ProduceMessage(context.Background(), kafka.MessageTypeAddPostVote, msg)
+		if err != nil {
+			zap.L().Error("Failed to produce message", zap.Error(err))
+		}
+	}()
 
 	return nil
 }
@@ -94,7 +105,16 @@ func (v *VoteService) RevokeVotePost(ctx context.Context, postID int64, userID i
 		}
 	}
 
-	go updatePostVoteCount(context.Background(), v, postID, -1)
+	msg := model.KafkaVotePostModel{
+		PostId: fmt.Sprintf("%d", postID),
+	}
+	go func() {
+		err := v.KafkaInterface.ProduceMessage(context.Background(), kafka.MessageTypeSubPostVote, msg)
+		if err != nil {
+			zap.L().Error("Failed to produce message", zap.Error(err))
+		}
+	}()
+
 	return nil
 }
 
@@ -155,9 +175,11 @@ func (v *VoteService) GetPostVoteDetail(ctx context.Context, postID int64, pageN
 }
 
 func NewVoteService(voteDaoInterface dao.PostVoteDaoInterface, voteCacheInterface cache.VoteCacheInterface) VotePostServiceInterface {
+	w, r := kafka.InitKafka()
 	return &VoteService{
 		voteDaoInterface,
 		voteCacheInterface,
+		kafka.NewKafka(w, r, voteDaoInterface),
 	}
 }
 
