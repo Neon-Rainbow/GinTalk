@@ -1,6 +1,9 @@
 package kafka
 
 import (
+	"GinTalk/DTO"
+	"GinTalk/cache"
+	"GinTalk/dao"
 	"GinTalk/model"
 	"context"
 	"encoding/json"
@@ -10,81 +13,110 @@ import (
 )
 
 var kafkaHandleMap = map[string]func(ctx context.Context, k *Kafka, message KafkaMessage) error{
-	MessageTypeAddPostVote: addPostVoteHandle,
-	MessageTypeSubPostVote: subPostVoteHandle,
+	MessageTypeAddPostVote:     addPostVoteHandle,
+	MessageTypeSubPostVote:     subPostVoteHandle,
+	MessageTypeSavePostToRedis: savePostToRedis,
 }
 
+// addPostVoteHandle 帖子投票数增加处理
 func addPostVoteHandle(ctx context.Context, k *Kafka, message KafkaMessage) error {
-	var vote model.KafkaVotePostModel
-	msgMap, ok := message.Message.(map[string]interface{})
-	if ok {
-		msgBytes, err := json.Marshal(msgMap)
-		if err != nil {
-			zap.L().Error("Failed to marshal message to JSON", zap.Error(err))
-			return err
-		}
-		if err := json.Unmarshal(msgBytes, &vote); err != nil {
-			zap.L().Error("Failed to unmarshal JSON to VotePostDTO", zap.Error(err))
-			return err
-		}
-	} else if msgBytes, ok := message.Message.([]byte); ok {
-		// 如果消息是 []byte，直接反序列化
-		if err := json.Unmarshal(msgBytes, &vote); err != nil {
-			zap.L().Error("Failed to unmarshal byte message to VotePostDTO", zap.Error(err))
-			return err
-		}
-	} else {
-		zap.L().Error("Unsupported message type", zap.Any("message", message.Message))
-		return fmt.Errorf("unsupported message type: %T", message.Message)
+	vote, err := handleKafkaMessage[model.KafkaVotePostModel](ctx, message)
+	if err != nil {
+		return err
 	}
+
 	id, err := strconv.ParseInt(vote.PostId, 10, 64)
 	if err != nil {
-		fmt.Printf("转换失败: %v\n", err)
+		zap.L().Error("Failed to convert PostId", zap.Error(err))
 		return err
 	}
-	err = k.voteDao.AddContentVoteUp(ctx, id)
+	return UpdatePostVoteCount(ctx, k.voteDao, k.voteCache, id, 1)
+}
+
+// subPostVoteHandle 减少帖子投票数
+func subPostVoteHandle(ctx context.Context, k *Kafka, message KafkaMessage) error {
+	vote, err := handleKafkaMessage[model.KafkaVotePostModel](ctx, message)
 	if err != nil {
-		zap.L().Error("addPostVoteHandle.AddContentVoteUp failed", zap.Error(err))
 		return err
 	}
-	zap.L().Info("addPostVoteHandle.AddContentVoteUp success", zap.Any("vote", vote))
+
+	id, err := strconv.ParseInt(vote.PostId, 10, 64)
+	if err != nil {
+		zap.L().Error("Failed to convert PostId", zap.Error(err))
+		return err
+	}
+	return UpdatePostVoteCount(ctx, k.voteDao, k.voteCache, id, -1)
+}
+
+// savePostToRedis 保存帖子到 Redis
+func savePostToRedis(ctx context.Context, k *Kafka, message KafkaMessage) error {
+	post, err := handleKafkaMessage[DTO.PostSummary](ctx, message)
+	if err != nil {
+		return err
+	}
+	if err := k.postCache.SavePostToRedis(ctx, &post); err != nil {
+		zap.L().Error("Failed to save post to Redis", zap.Error(err))
+		return err
+	}
+	zap.L().Info("Post saved to Redis successfully", zap.Any("post", post))
 	return nil
 }
 
-func subPostVoteHandle(ctx context.Context, k *Kafka, message KafkaMessage) error {
-	var vote model.KafkaVotePostModel
-	msgMap, ok := message.Message.(map[string]interface{})
-	if ok {
-		msgBytes, err := json.Marshal(msgMap)
-		if err != nil {
-			zap.L().Error("Failed to marshal message to JSON", zap.Error(err))
-			return err
-		}
-		if err := json.Unmarshal(msgBytes, &vote); err != nil {
-			zap.L().Error("Failed to unmarshal JSON to VotePostDTO", zap.Error(err))
-			return err
-		}
-	} else if msgBytes, ok := message.Message.([]byte); ok {
-		// 如果消息是 []byte，直接反序列化
-		if err := json.Unmarshal(msgBytes, &vote); err != nil {
-			zap.L().Error("Failed to unmarshal byte message to VotePostDTO", zap.Error(err))
-			return err
-		}
-	} else {
-		zap.L().Error("Unsupported message type", zap.Any("message", message.Message))
-		return fmt.Errorf("unsupported message type: %T", message.Message)
-	}
-	id, err := strconv.ParseInt(vote.PostId, 10, 64)
+// UpdatePostVoteCount 更新帖子的投票数,同时更新 Redis 的帖子热度
+func UpdatePostVoteCount(
+	ctx context.Context,
+	voteDao dao.PostVoteDaoInterface,
+	voteCache cache.VoteCacheInterface,
+	postID int64,
+	voteChange int,
+) error {
+	// 更新帖子的热度
+	newDetail, err := voteDao.GetPostVoteCount(ctx, postID)
 	if err != nil {
-		fmt.Printf("转换失败: %v\n", err)
+		zap.L().Error("Failed to get post vote count", zap.Error(err))
+		return err
+	}
+	newUp := int(newDetail.Vote)
+	oldUp := newUp - voteChange
+
+	// err = v.VoteCacheInterface.UpdatePostHot(ctx, postID, newUp, createTime)
+	err = voteCache.AddPostHot(ctx, postID, oldUp, newUp)
+	if err != nil {
+		zap.L().Error("Failed to update post hot score", zap.Error(err))
 		return err
 	}
 
-	err = k.voteDao.SubContentVoteUp(ctx, id)
-	if err != nil {
-		zap.L().Error("subPostVoteHandle.SubContentVoteUp failed", zap.Error(err))
-		return err
-	}
-	zap.L().Info("subPostVoteHandle.SubContentVoteUp success", zap.Any("vote", vote))
+	zap.L().Info("Update post vote count successfully", zap.Int64("postID", postID), zap.Int("vote", voteChange))
 	return nil
+}
+
+// handleKafkaMessage 处理 Kafka 消息,将消息解析为泛型类型 T
+func handleKafkaMessage[T any](ctx context.Context, message KafkaMessage) (T, error) {
+	var result T
+	var msgBytes []byte
+	var err error
+
+	// 将消息统一转换为字节数组
+	switch msg := message.Message.(type) {
+	case map[string]interface{}:
+		msgBytes, err = json.Marshal(msg)
+		if err != nil {
+			zap.L().Error("无法将消息封送至 JSON", zap.Error(err))
+			return result, err
+		}
+	case []byte:
+		msgBytes = msg
+	default:
+		err = fmt.Errorf("不支持的消息类型: %T", message.Message)
+		zap.L().Error("不支持的消息类型", zap.Any("message", message.Message))
+		return result, err
+	}
+
+	// 解析字节数组为泛型类型 T
+	if err := json.Unmarshal(msgBytes, &result); err != nil {
+		zap.L().Error("无法解组消息", zap.Error(err))
+		return result, err
+	}
+
+	return result, nil
 }

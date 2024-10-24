@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"GinTalk/cache"
 	"GinTalk/dao"
 	"context"
 	"encoding/json"
@@ -28,22 +29,28 @@ type KafkaMessage struct {
 }
 
 const (
-	MessageTypeAddPostVote = "add_post_vote"
-	MessageTypeSubPostVote = "sub_post_vote"
+	MessageTypeAddPostVote     = "add_post_vote"
+	MessageTypeSubPostVote     = "sub_post_vote"
+	MessageTypeSavePostToRedis = "save_post_to_redis"
 )
+
+var _ KafkaInterface = (*Kafka)(nil)
 
 type KafkaInterface interface {
 	ProduceMessage(ctx context.Context, messageType string, message any) error
 	ConsumeMessages(ctx context.Context) error
+	Close()
 }
 
 type Kafka struct {
-	writer  *kafka.Writer
-	reader  *kafka.Reader
-	voteDao dao.PostVoteDaoInterface
-	postDao dao.PostDaoInterface
+	writer    *kafka.Writer
+	reader    *kafka.Reader
+	voteDao   dao.PostVoteDaoInterface
+	voteCache cache.VoteCacheInterface
+	postCache cache.PostCacheInterface
 }
 
+// InitKafka 初始化 Kafka
 func InitKafka() (writer *kafka.Writer, reader *kafka.Reader) {
 	return &kafka.Writer{
 			Addr:     kafka.TCP(kafkaBrokerAddress),
@@ -59,12 +66,16 @@ func InitKafka() (writer *kafka.Writer, reader *kafka.Reader) {
 		})
 }
 
-func NewKafka(voteDao dao.PostVoteDaoInterface) KafkaInterface {
+// NewKafka 初始化 Kafka
+func NewKafka(voteDao dao.PostVoteDaoInterface, voteCache cache.VoteCacheInterface, postCache cache.PostCacheInterface) KafkaInterface {
 	w, r := InitKafka()
+
 	k := &Kafka{
-		writer:  w,
-		reader:  r,
-		voteDao: voteDao,
+		writer:    w,
+		reader:    r,
+		voteDao:   voteDao,
+		voteCache: voteCache,
+		postCache: postCache,
 	}
 	go func() {
 		err := k.ConsumeMessages(context.Background())
@@ -77,18 +88,7 @@ func NewKafka(voteDao dao.PostVoteDaoInterface) KafkaInterface {
 
 // ProduceMessage Kafka Producer：生产者函数
 func (k *Kafka) ProduceMessage(ctx context.Context, messageType string, message any) error {
-	writer := kafka.Writer{
-		Addr:     kafka.TCP(kafkaBrokerAddress),
-		Topic:    topic,
-		Balancer: &kafka.LeastBytes{},
-	}
-
-	defer func(writer *kafka.Writer) {
-		err := writer.Close()
-		if err != nil {
-			zap.L().Error("关闭 Kafka Writer 失败", zap.Error(err))
-		}
-	}(&writer)
+	writer := k.writer
 
 	msg := KafkaMessage{
 		MessageType: messageType,
@@ -113,22 +113,7 @@ func (k *Kafka) ProduceMessage(ctx context.Context, messageType string, message 
 
 // ConsumeMessages Kafka Consumer：消费者函数
 func (k *Kafka) ConsumeMessages(ctx context.Context) error {
-	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:     []string{kafkaBrokerAddress},
-		Topic:       topic,
-		GroupID:     "my-group",
-		StartOffset: kafka.FirstOffset, // 从第一个未消费的消息开始
-		MinBytes:    10e3,              // 10KB
-		MaxBytes:    10e6,              // 10MB
-	})
-
-	defer func(reader *kafka.Reader) {
-		err := reader.Close()
-		zap.L().Info("关闭 Kafka Reader", zap.Time("time", time.Now()))
-		if err != nil {
-			zap.L().Error("关闭 Kafka Reader 失败", zap.Error(err))
-		}
-	}(reader)
+	reader := k.reader
 
 	zap.L().Info("开始消费消息")
 	for {
@@ -164,16 +149,27 @@ func (k *Kafka) handleKafkaMessage(ctx context.Context, kafkaMsg KafkaMessage) {
 	}
 }
 
+func (k *Kafka) Close() {
+	err := k.writer.Close()
+	if err != nil {
+		zap.L().Error("关闭 Kafka Writer 失败", zap.Error(err))
+	}
+	zap.L().Info("关闭 Kafka Writer 成功")
+	err = k.reader.Close()
+	if err != nil {
+		zap.L().Error("关闭 Kafka Reader 失败", zap.Error(err))
+	}
+	zap.L().Info("关闭 Kafka Reader 成功")
+}
+
 // 捕获系统中断信号
-func handleInterrupt(ctx context.Context) {
+func HandleInterrupt(ctx context.Context, k KafkaInterface) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
+
 	fmt.Println("\n收到中断信号，准备退出...")
-	cancelFunc, ok := ctx.Value("cancel").(context.CancelFunc)
-	if ok {
-		cancelFunc()
-	}
+	k.Close()
 	os.Exit(0)
 }
 
