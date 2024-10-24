@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -113,16 +114,17 @@ func (k *Kafka) ProduceMessage(ctx context.Context, messageType string, message 
 // ConsumeMessages Kafka Consumer：消费者函数
 func (k *Kafka) ConsumeMessages(ctx context.Context) error {
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{kafkaBrokerAddress},
-		Topic:     topic,
-		GroupID:   "my-group",
-		Partition: 0,
-		MinBytes:  10e3, // 10KB
-		MaxBytes:  10e6, // 10MB
+		Brokers:     []string{kafkaBrokerAddress},
+		Topic:       topic,
+		GroupID:     "my-group",
+		StartOffset: kafka.FirstOffset, // 从第一个未消费的消息开始
+		MinBytes:    10e3,              // 10KB
+		MaxBytes:    10e6,              // 10MB
 	})
 
 	defer func(reader *kafka.Reader) {
 		err := reader.Close()
+		zap.L().Info("关闭 Kafka Reader", zap.Time("time", time.Now()))
 		if err != nil {
 			zap.L().Error("关闭 Kafka Reader 失败", zap.Error(err))
 		}
@@ -131,6 +133,7 @@ func (k *Kafka) ConsumeMessages(ctx context.Context) error {
 	zap.L().Info("开始消费消息")
 	for {
 		msg, err := reader.ReadMessage(ctx)
+		zap.L().Info("读取消息", zap.Any("message", msg))
 		if err != nil {
 			zap.L().Error("读取消息失败", zap.Error(err))
 			return err
@@ -139,7 +142,6 @@ func (k *Kafka) ConsumeMessages(ctx context.Context) error {
 		err = json.Unmarshal(msg.Value, &kafkaMsg)
 		if err != nil {
 			zap.L().Error("解析消息失败", zap.Error(err))
-			return err
 		}
 		zap.L().Info("接收到消息", zap.Any("message", kafkaMsg))
 		k.handleKafkaMessage(ctx, kafkaMsg)
@@ -173,4 +175,35 @@ func handleInterrupt(ctx context.Context) {
 		cancelFunc()
 	}
 	os.Exit(0)
+}
+
+// ResetKafkaTopic 删除并重建 Topic
+func ResetKafkaTopic() error {
+	conn, err := kafka.Dial("tcp", kafkaBrokerAddress)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	// 删除 Topic
+	err = conn.DeleteTopics(topic)
+	if err != nil {
+		log.Printf("Failed to delete topic: %v", err)
+		return err
+	}
+	zap.L().Info("Topic deleted successfully")
+
+	// 重建 Topic
+	topicConfig := kafka.TopicConfig{
+		Topic:             topic,
+		NumPartitions:     1,
+		ReplicationFactor: 1,
+	}
+	err = conn.CreateTopics(topicConfig)
+	if err != nil {
+		zap.L().Error("Failed to create topic", zap.Error(err))
+		return err
+	}
+	zap.L().Info("Topic created successfully")
+	return nil
 }
