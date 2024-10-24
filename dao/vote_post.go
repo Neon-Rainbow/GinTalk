@@ -45,7 +45,7 @@ type PostVoteDao struct {
 }
 
 func (p *PostVoteDao) AddPostVote(ctx context.Context, postID int64, userID int64) error {
-	vote := model.Vote{
+	vote := model.VotePost{
 		PostID: postID,
 		UserID: userID,
 		Vote:   1,
