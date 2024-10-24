@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -39,6 +40,7 @@ type Kafka struct {
 	writer  *kafka.Writer
 	reader  *kafka.Reader
 	voteDao dao.PostVoteDaoInterface
+	postDao dao.PostDaoInterface
 }
 
 func InitKafka() (writer *kafka.Writer, reader *kafka.Reader) {
@@ -56,10 +58,11 @@ func InitKafka() (writer *kafka.Writer, reader *kafka.Reader) {
 		})
 }
 
-func NewKafka(writer *kafka.Writer, reader *kafka.Reader, voteDao dao.PostVoteDaoInterface) KafkaInterface {
+func NewKafka(voteDao dao.PostVoteDaoInterface) KafkaInterface {
+	w, r := InitKafka()
 	k := &Kafka{
-		writer:  writer,
-		reader:  reader,
+		writer:  w,
+		reader:  r,
 		voteDao: voteDao,
 	}
 	go func() {

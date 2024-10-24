@@ -2,10 +2,10 @@ package controller
 
 import (
 	"GinTalk/DTO"
-	"GinTalk/container"
 	"GinTalk/pkg/code"
 	"GinTalk/service"
 	"context"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -15,9 +15,9 @@ type AuthHandler struct {
 }
 
 // NewAuthHandler 创建 AuthHandler 实例
-func NewAuthHandler() *AuthHandler {
+func NewAuthHandler(service service.AuthServiceInterface) *AuthHandler {
 	return &AuthHandler{
-		container.GetAuthService(),
+		AuthServiceInterface: service,
 	}
 }
 

@@ -2,20 +2,20 @@ package controller
 
 import (
 	"GinTalk/DTO"
-	"GinTalk/container"
 	"GinTalk/pkg/code"
 	"GinTalk/service"
-	"github.com/gin-gonic/gin"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PostHandler struct {
 	service.PostServiceInterface
 }
 
-func NewPostHandler() *PostHandler {
+func NewPostHandler(service service.PostServiceInterface) *PostHandler {
 	return &PostHandler{
-		container.GetPostService(),
+		PostServiceInterface: service,
 	}
 }
 
@@ -93,7 +93,7 @@ func (ph *PostHandler) GetPostListByCommunityID(c *gin.Context) {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	postList, apiError := container.GetPostService().GetPostListByCommunityID(c.Request.Context(), communityID, pageNum, pageSize)
+	postList, apiError := ph.PostServiceInterface.GetPostListByCommunityID(c.Request.Context(), communityID, pageNum, pageSize)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return

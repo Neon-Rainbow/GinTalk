@@ -2,9 +2,9 @@ package controller
 
 import (
 	"GinTalk/DTO"
-	"GinTalk/container"
 	"GinTalk/pkg/code"
 	"GinTalk/service"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,9 +12,9 @@ type VoteCommentController struct {
 	service.VoteCommentServiceInterface
 }
 
-func NewVoteCommentController() *VoteCommentController {
+func NewVoteCommentController(service service.VoteCommentServiceInterface) *VoteCommentController {
 	return &VoteCommentController{
-		container.GetVoteCommentService(),
+		VoteCommentServiceInterface: service,
 	}
 }
 

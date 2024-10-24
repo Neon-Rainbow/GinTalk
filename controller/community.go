@@ -1,12 +1,12 @@
 package controller
 
 import (
-	"GinTalk/container"
 	"GinTalk/pkg/code"
 	"GinTalk/service"
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"strconv"
 )
 
 // CommunityHandler 社区控制器
@@ -15,9 +15,9 @@ type CommunityHandler struct {
 }
 
 // NewCommunityController 创建 CommunityHandler 实例
-func NewCommunityController() *CommunityHandler {
+func NewCommunityController(service service.CommunityServiceInterface) *CommunityHandler {
 	return &CommunityHandler{
-		container.GetCommunityService(), // 从 IOC 容器获取 Service 实例
+		CommunityService: service,
 	}
 }
 

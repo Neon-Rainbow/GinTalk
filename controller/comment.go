@@ -2,19 +2,21 @@ package controller
 
 import (
 	"GinTalk/DTO"
-	"GinTalk/container"
 	"GinTalk/pkg/code"
 	"GinTalk/service"
-	"github.com/gin-gonic/gin"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type CommentController struct {
 	CommentService service.CommentServiceInterface
 }
 
-func NewCommentController() CommentController {
-	return CommentController{CommentService: container.GetCommentService()}
+func NewCommentController(service service.CommentServiceInterface) *CommentController {
+	return &CommentController{
+		CommentService: service,
+	}
 }
 
 // GetTopComments 获取主评论
@@ -262,7 +264,7 @@ func (cc *CommentController) GetCommentCountByUserID(c *gin.Context) {
 		return
 	}
 	//3. 调用 service 获取数据
-	commentCount, apiError := container.GetCommentService().GetCommentCountByUserID(c, int64(userID))
+	commentCount, apiError := cc.CommentService.GetCommentCountByUserID(c, int64(userID))
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return

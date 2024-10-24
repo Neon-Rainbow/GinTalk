@@ -3,78 +3,104 @@ package container
 
 import (
 	"GinTalk/cache"
+	"GinTalk/controller"
 	"GinTalk/dao"
 	"GinTalk/dao/MySQL"
 	"GinTalk/dao/Redis"
+	"GinTalk/kafka"
 	"GinTalk/service"
-	"sync"
+
+	"github.com/go-redis/redis/v8"
+	"go.uber.org/dig"
+	"gorm.io/gorm"
 )
 
-var (
-	once               sync.Once
-	communityService   service.CommunityServiceInterface
-	postService        service.PostServiceInterface
-	authService        service.AuthServiceInterface
-	votePostService    service.VotePostServiceInterface
-	commentService     service.CommentServiceInterface
-	voteCommentService service.VoteCommentServiceInterface
-)
+func BuildContainer() *dig.Container {
+	container := dig.New()
 
-// InitContainer 初始化容器
-func InitContainer() {
-	once.Do(func() {
-		// 初始化 DAO 层
-		dao.SetDefault(MySQL.GetDB())
+	container.Provide(MySQL.GetDB)
+	container.Provide(Redis.GetRedisClient)
 
-		communityService = service.NewCommunityService(dao.NewCommunityDao(MySQL.GetDB()))
-		postService = service.NewPostService(dao.NewPostDao(MySQL.GetDB()), cache.NewPostCache(Redis.GetRedisClient()))
-		authService = service.NewAuthService(dao.NewUserDao(MySQL.GetDB()), cache.NewAuthCache(Redis.GetRedisClient()))
-		votePostService = service.NewVoteService(dao.NewPostVoteDao(MySQL.GetDB()), cache.NewVoteCache(Redis.GetRedisClient()))
-		commentService = service.NewCommentService(dao.NewCommentDao(MySQL.GetDB()))
-		voteCommentService = service.NewVoteCommentService(dao.NewCommentVoteImpl(MySQL.GetDB()))
+	// 提供 MySQL 连接
+	container.Provide(func(db *gorm.DB) dao.CommentDaoInterface {
+		return dao.NewCommentDao(db)
 	})
-}
+	container.Provide(func(db *gorm.DB) dao.PostDaoInterface {
+		return dao.NewPostDao(db)
+	})
+	container.Provide(func(db *gorm.DB) dao.UserDaoInterface {
+		return dao.NewUserDao(db)
+	})
+	container.Provide(func(db *gorm.DB) dao.CommunityDaoInterface {
+		return dao.NewCommunityDao(db)
+	})
+	container.Provide(func(db *gorm.DB) dao.PostVoteDaoInterface {
+		return dao.NewPostVoteDao(db)
+	})
+	container.Provide(func(db *gorm.DB) dao.CommentVoteInterface {
+		return dao.NewCommentVoteImpl(db)
+	})
 
-// GetCommunityService 返回接口类型的 Service 实例
-func GetCommunityService() service.CommunityServiceInterface {
-	if communityService == nil {
-		panic("community service is not initialized")
-	}
-	return communityService
-}
+	// 提供 Redis 连接
+	container.Provide(func(client *redis.Client) cache.PostCacheInterface {
+		return cache.NewPostCache(client)
+	})
+	container.Provide(func(client *redis.Client) cache.AuthCacheInterface {
+		return cache.NewAuthCache(client)
+	})
+	container.Provide(func(client *redis.Client) cache.VoteCacheInterface {
+		return cache.NewVoteCache(client)
+	})
 
-// GetPostService 返回接口类型的 Service 实例
-func GetPostService() service.PostServiceInterface {
-	if postService == nil {
-		panic("post service is not initialized")
-	}
-	return postService
-}
+	// 提供 Kafka 实例
+	container.Provide(func(votePost dao.PostVoteDaoInterface) kafka.KafkaInterface {
+		return kafka.NewKafka(votePost)
+	})
 
-func GetAuthService() service.AuthServiceInterface {
-	if authService == nil {
-		panic("auth service is not initialized")
-	}
-	return authService
-}
+	// 提供 Service 实例
+	container.Provide(func(dao dao.CommentDaoInterface) service.CommentServiceInterface {
+		return service.NewCommentService(dao)
+	})
 
-func GetVotePostService() service.VotePostServiceInterface {
-	if votePostService == nil {
-		panic("vote service is not initialized")
-	}
-	return votePostService
-}
+	container.Provide(func(dao dao.PostDaoInterface, cache cache.PostCacheInterface) service.PostServiceInterface {
+		return service.NewPostService(dao, cache)
+	})
 
-func GetCommentService() service.CommentServiceInterface {
-	if commentService == nil {
-		panic("comment service is not initialized")
-	}
-	return commentService
-}
+	container.Provide(func(dao dao.UserDaoInterface, cache cache.AuthCacheInterface) service.AuthServiceInterface {
+		return service.NewAuthService(dao, cache)
+	})
 
-func GetVoteCommentService() service.VoteCommentServiceInterface {
-	if voteCommentService == nil {
-		panic("vote comment service is not initialized")
-	}
-	return voteCommentService
+	container.Provide(func(dao dao.CommunityDaoInterface) service.CommunityServiceInterface {
+		return service.NewCommunityService(dao)
+	})
+
+	container.Provide(func(dao dao.PostVoteDaoInterface, cache cache.VoteCacheInterface, kafka kafka.KafkaInterface) service.VotePostServiceInterface {
+		return service.NewVoteService(dao, cache, kafka)
+	})
+
+	container.Provide(func(dao dao.CommentVoteInterface) service.VoteCommentServiceInterface {
+		return service.NewVoteCommentService(dao)
+	})
+
+	// 提供 Controller 实例
+	container.Provide(func(service service.AuthServiceInterface) *controller.AuthHandler {
+		return controller.NewAuthHandler(service)
+	})
+	container.Provide(func(service service.CommunityServiceInterface) *controller.CommunityHandler {
+		return controller.NewCommunityController(service)
+	})
+	container.Provide(func(service service.PostServiceInterface) *controller.PostHandler {
+		return controller.NewPostHandler(service)
+	})
+	container.Provide(func(service service.VotePostServiceInterface) *controller.VoteHandler {
+		return controller.NewVoteHandle(service)
+	})
+	container.Provide(func(service service.CommentServiceInterface) *controller.CommentController {
+		return controller.NewCommentController(service)
+	})
+	container.Provide(func(service service.VoteCommentServiceInterface) *controller.VoteCommentController {
+		return controller.NewVoteCommentController(service)
+	})
+
+	return container
 }

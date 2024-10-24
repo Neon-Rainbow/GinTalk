@@ -10,8 +10,9 @@ import (
 	"GinTalk/pkg/code"
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 var _ VotePostServiceInterface = (*VoteService)(nil)
@@ -174,12 +175,11 @@ func (v *VoteService) GetPostVoteDetail(ctx context.Context, postID int64, pageN
 	return voteDetails, nil
 }
 
-func NewVoteService(voteDaoInterface dao.PostVoteDaoInterface, voteCacheInterface cache.VoteCacheInterface) VotePostServiceInterface {
-	w, r := kafka.InitKafka()
+func NewVoteService(voteDaoInterface dao.PostVoteDaoInterface, voteCacheInterface cache.VoteCacheInterface, kafkaInterface kafka.KafkaInterface) VotePostServiceInterface {
 	return &VoteService{
 		voteDaoInterface,
 		voteCacheInterface,
-		kafka.NewKafka(w, r, voteDaoInterface),
+		kafkaInterface,
 	}
 }
 

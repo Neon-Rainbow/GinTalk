@@ -2,20 +2,20 @@ package controller
 
 import (
 	"GinTalk/DTO"
-	"GinTalk/container"
 	"GinTalk/pkg/code"
 	"GinTalk/service"
-	"github.com/gin-gonic/gin"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type VoteHandler struct {
 	service.VotePostServiceInterface
 }
 
-func NewVoteHandle() *VoteHandler {
+func NewVoteHandle(service service.VotePostServiceInterface) *VoteHandler {
 	return &VoteHandler{
-		container.GetVotePostService(),
+		VotePostServiceInterface: service,
 	}
 }
 

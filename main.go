@@ -21,13 +21,13 @@ func main() {
 	}
 
 	// 初始化IOC容器
-	container.InitContainer()
+	c := container.BuildContainer()
 
 	defer MySQL.Close()
 	defer Redis.Close()
 
 	// 初始化路由
-	r := router.SetupRouter()
+	r := router.SetupRouter(c)
 	err := r.Run(fmt.Sprintf("%s:%d", settings.GetConfig().Host, settings.GetConfig().Port))
 	if err != nil {
 		fmt.Printf("启动失败,错误原因: %v\n", err)
