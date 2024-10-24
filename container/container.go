@@ -9,7 +9,6 @@ import (
 	"GinTalk/dao/Redis"
 	"GinTalk/kafka"
 	"GinTalk/service"
-
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/dig"
 	"gorm.io/gorm"
@@ -53,8 +52,8 @@ func BuildContainer() *dig.Container {
 	})
 
 	// 提供 Kafka 实例
-	container.Provide(func(votePost dao.PostVoteDaoInterface) kafka.KafkaInterface {
-		return kafka.NewKafka(votePost)
+	container.Provide(func(votePost dao.PostVoteDaoInterface, voteCache cache.VoteCacheInterface, postCache cache.PostCacheInterface) kafka.KafkaInterface {
+		return kafka.NewKafka(votePost, voteCache, postCache)
 	})
 
 	// 提供 Service 实例
@@ -62,8 +61,8 @@ func BuildContainer() *dig.Container {
 		return service.NewCommentService(dao)
 	})
 
-	container.Provide(func(dao dao.PostDaoInterface, cache cache.PostCacheInterface) service.PostServiceInterface {
-		return service.NewPostService(dao, cache)
+	container.Provide(func(dao dao.PostDaoInterface, cache cache.PostCacheInterface, kafka kafka.KafkaInterface) service.PostServiceInterface {
+		return service.NewPostService(dao, cache, kafka)
 	})
 
 	container.Provide(func(dao dao.UserDaoInterface, cache cache.AuthCacheInterface) service.AuthServiceInterface {

@@ -9,6 +9,7 @@ import (
 	"GinTalk/pkg/snowflake"
 	"GinTalk/router"
 	"GinTalk/settings"
+	"context"
 	"fmt"
 	"go.uber.org/zap"
 )
@@ -33,6 +34,17 @@ func main() {
 
 	defer MySQL.Close()
 	defer Redis.Close()
+
+	// 从容器中获取 Kafka 实例
+	var kafkaInstance kafka.KafkaInterface
+	if err := c.Invoke(func(k kafka.KafkaInterface) {
+		kafkaInstance = k
+	}); err != nil {
+		zap.L().Fatal("获取 Kafka 实例失败", zap.Error(err))
+	}
+
+	// 捕获中断信号并优雅关闭 Kafka
+	go kafka.HandleInterrupt(context.Background(), kafkaInstance)
 
 	// 初始化路由
 	r := router.SetupRouter(c)

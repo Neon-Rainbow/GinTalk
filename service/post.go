@@ -4,6 +4,7 @@ import (
 	"GinTalk/DTO"
 	"GinTalk/cache"
 	"GinTalk/dao"
+	"GinTalk/kafka"
 	"GinTalk/pkg/apiError"
 	"GinTalk/pkg/code"
 	"GinTalk/pkg/snowflake"
@@ -13,6 +14,9 @@ import (
 	"slices"
 	"time"
 )
+
+// DelayDeleteTime 设置延迟双删的时间
+const DelayDeleteTime = 2 * time.Second
 
 var _ PostServiceInterface = (*PostService)(nil)
 
@@ -27,13 +31,15 @@ type PostServiceInterface interface {
 type PostService struct {
 	dao.PostDaoInterface
 	cache.PostCacheInterface
+	kafka.KafkaInterface
 }
 
 // NewPostService 使用依赖注入初始化 PostService
-func NewPostService(postDaoInterface dao.PostDaoInterface, cache cache.PostCacheInterface) PostServiceInterface {
+func NewPostService(postDaoInterface dao.PostDaoInterface, cache cache.PostCacheInterface, kafka kafka.KafkaInterface) PostServiceInterface {
 	return &PostService{
 		PostDaoInterface:   postDaoInterface,
 		PostCacheInterface: cache,
+		KafkaInterface:     kafka,
 	}
 }
 
@@ -68,9 +74,9 @@ func (ps *PostService) CreatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 
 	// 将帖子 ID 存入 Redis
 	go func() {
-		err := ps.PostCacheInterface.SavePostToRedis(ctx, postSummary)
+		err := ps.KafkaInterface.ProduceMessage(context.Background(), kafka.MessageTypeSavePostToRedis, postSummary)
 		if err != nil {
-			zap.L().Error("保存帖子到 Redis 失败", zap.Error(err))
+			zap.L().Error("Kafka 生产消息失败", zap.Error(err))
 		}
 	}()
 
@@ -114,7 +120,7 @@ func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize in
 	// 将缺失的帖子存入 Redis
 	go func() {
 		for _, post := range list {
-			err := ps.PostCacheInterface.SavePostToRedis(ctx, &post)
+			err := ps.KafkaInterface.ProduceMessage(context.Background(), kafka.MessageTypeSavePostToRedis, post)
 			if err != nil {
 				zap.L().Error("保存帖子到 Redis 失败", zap.Error(err))
 			}
@@ -168,7 +174,7 @@ func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 
 	// 等待 2s 后第二次删除 Redis 中数据
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
+		ctx, cancel := context.WithTimeout(context.Background(), DelayDeleteTime)
 		defer cancel()
 		time.Sleep(2 * time.Second)
 		err := ps.PostCacheInterface.DeleteRedisPost(ctx, postDTO.PostID)

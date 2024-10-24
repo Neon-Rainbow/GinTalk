@@ -77,6 +77,7 @@ func (v *VoteService) VotePost(ctx context.Context, postID int64, userID int64) 
 		if err != nil {
 			zap.L().Error("Failed to produce message", zap.Error(err))
 		}
+		zap.L().Info("投票成功")
 	}()
 
 	return nil
@@ -187,46 +188,3 @@ const (
 	MaxRetries   = 3               // 最大重试次数
 	InitialDelay = 2 * time.Second // 初始重试间隔
 )
-
-// updatePostVoteCount 更新帖子的投票数,同时更新 Redis 的帖子热度
-func updatePostVoteCount(ctx context.Context, v *VoteService, postID int64, voteChange int) {
-	// 创建带超时的 context，避免无限重试
-
-	// 执行带重试机制的投票逻辑
-	var attempt int
-	var err error
-	delay := InitialDelay
-
-	for attempt = 1; attempt <= MaxRetries; attempt++ {
-		switch voteChange {
-		case 1:
-			err = v.PostVoteDaoInterface.AddContentVoteUp(ctx, postID)
-		case -1:
-			err = v.PostVoteDaoInterface.SubContentVoteUp(ctx, postID)
-		}
-		if err == nil {
-			break
-		}
-		time.Sleep(delay)
-		delay *= 2
-	}
-
-	// 更新帖子的热度
-	newDetail, err := v.PostVoteDaoInterface.GetPostVoteCount(ctx, postID)
-	if err != nil {
-		zap.L().Error("Failed to get post vote count", zap.Error(err))
-		return
-	}
-	newUp := int(newDetail.Vote)
-	oldUp := newUp - voteChange
-
-	// err = v.VoteCacheInterface.UpdatePostHot(ctx, postID, newUp, createTime)
-	err = v.VoteCacheInterface.AddPostHot(ctx, postID, oldUp, newUp)
-	if err != nil {
-		zap.L().Error("Failed to update post hot score", zap.Error(err))
-		return
-	}
-
-	zap.L().Info("Update post vote count successfully", zap.Int64("postID", postID), zap.Int("vote", voteChange))
-	return
-}
