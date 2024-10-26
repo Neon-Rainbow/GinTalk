@@ -66,43 +66,47 @@ func SetupRouter(container *dig.Container) *gin.Engine {
 		v1.POST("/logout", authController.LogoutHandler)
 		v1.GET("/refresh_token", authController.RefreshHandler)
 
-		// 社区相关路由
-		v1.GET("/community", communityController.CommunityHandler)
-		v1.GET("/community/:id", communityController.CommunityDetailHandler)
+		v1.Use(controller.JWTAuthMiddleware())
+		{
+			// 社区相关路由
+			v1.GET("/community", communityController.CommunityHandler)
+			v1.GET("/community/:id", communityController.CommunityDetailHandler)
 
-		// 帖子相关路由
-		v1.POST("/post", postController.CreatePostHandler)
-		v1.GET("/post", postController.GetPostListHandler)
-		v1.GET("/post/community", postController.GetPostListByCommunityID)
-		v1.GET("/post/:id", postController.GetPostDetailHandler)
-		v1.PUT("/post", postController.UpdatePostHandler)
+			// 帖子相关路由
+			v1.POST("/post", postController.CreatePostHandler)
+			v1.DELETE("/post", postController.DeletePostHandler)
+			v1.GET("/post", postController.GetPostListHandler)
+			v1.GET("/post/community", postController.GetPostListByCommunityID)
+			v1.GET("/post/:id", postController.GetPostDetailHandler)
+			v1.PUT("/post", postController.UpdatePostHandler)
 
-		// 帖子投票相关路由
-		v1.POST("/vote/post", voteController.VotePostHandler)
-		v1.DELETE("/vote/post", voteController.RevokeVoteHandler)
-		v1.GET("/vote/post/:id", voteController.GetVoteCountHandler)
-		v1.GET("/vote/post/user", voteController.MyVoteListHandler)
-		v1.GET("/vote/post/list", voteController.CheckUserVotedHandler)
-		v1.GET("/vote/post/batch", voteController.GetBatchPostVoteCount)
-		v1.GET("/vote/post/detail", voteController.GetPostVoteDetailHandler)
+			// 帖子投票相关路由
+			v1.POST("/vote/post", voteController.VotePostHandler)
+			v1.DELETE("/vote/post", voteController.RevokeVoteHandler)
+			v1.GET("/vote/post/:id", voteController.GetVoteCountHandler)
+			v1.GET("/vote/post/user", voteController.MyVoteListHandler)
+			v1.GET("/vote/post/list", voteController.CheckUserVotedHandler)
+			v1.GET("/vote/post/batch", voteController.GetBatchPostVoteCount)
+			v1.GET("/vote/post/detail", voteController.GetPostVoteDetailHandler)
 
-		// 评论相关路由
-		v1.GET("/comment/top", commentController.GetTopComments)
-		v1.GET("/comment/sub", commentController.GetSubComments)
-		v1.POST("/comment", commentController.CreateComment)
-		v1.PUT("/comment", commentController.UpdateComment)
-		v1.DELETE("/comment", commentController.DeleteComment)
-		v1.GET("/comment/count", commentController.GetCommentCount)
-		v1.GET("/comment/top/count", commentController.GetTopCommentCount)
-		v1.GET("/comment/sub/count", commentController.GetSubCommentCount)
-		v1.GET("/comment/user/count", commentController.GetCommentCountByUserID)
-		v1.GET("/comment", commentController.GetCommentByCommentID)
+			// 评论相关路由
+			v1.GET("/comment/top", commentController.GetTopComments)
+			v1.GET("/comment/sub", commentController.GetSubComments)
+			v1.POST("/comment", commentController.CreateComment)
+			v1.PUT("/comment", commentController.UpdateComment)
+			v1.DELETE("/comment", commentController.DeleteComment)
+			v1.GET("/comment/count", commentController.GetCommentCount)
+			v1.GET("/comment/top/count", commentController.GetTopCommentCount)
+			v1.GET("/comment/sub/count", commentController.GetSubCommentCount)
+			v1.GET("/comment/user/count", commentController.GetCommentCountByUserID)
+			v1.GET("/comment", commentController.GetCommentByCommentID)
 
-		// 评论投票相关路由
-		v1.POST("/vote/comment", voteCommentController.VoteCommentController)
-		v1.DELETE("/vote/comment", voteCommentController.RemoveVoteCommentController)
-		v1.GET("/vote/comment", voteCommentController.GetVoteCommentController)
-		v1.GET("/vote/comment/list", voteCommentController.GetVoteCommentListController)
+			// 评论投票相关路由
+			v1.POST("/vote/comment", voteCommentController.VoteCommentController)
+			v1.DELETE("/vote/comment", voteCommentController.RemoveVoteCommentController)
+			v1.GET("/vote/comment", voteCommentController.GetVoteCommentController)
+			v1.GET("/vote/comment/list", voteCommentController.GetVoteCommentListController)
+		}
 	})
 
 	if err != nil {

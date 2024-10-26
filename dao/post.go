@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"gorm.io/gorm"
+	"time"
 )
 
 var _ PostDaoInterface = (*PostDao)(nil)
@@ -21,6 +22,7 @@ type PostDaoInterface interface {
 
 	// GetPostListByCommunityID 根据社区ID获取帖子列表
 	GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, error)
+	DeletePost(ctx context.Context, postID int64) error
 }
 
 type PostDao struct {
@@ -206,4 +208,9 @@ func (pd *PostDao) GetPostListByCommunityID(ctx context.Context, communityID int
 		return nil, err
 	}
 	return posts, nil
+}
+
+func (pd *PostDao) DeletePost(ctx context.Context, postID int64) error {
+	sqlStr := `UPDATE post SET delete_time = ? WHERE post_id = ?`
+	return pd.WithContext(ctx).Exec(sqlStr, time.Now().Unix(), postID).Error
 }

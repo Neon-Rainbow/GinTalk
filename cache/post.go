@@ -52,7 +52,17 @@ type PostCacheInterface interface {
 	SavePostToRedis(ctx context.Context, summary *DTO.PostSummary) error
 	GetPostIDsFromRedis(ctx context.Context, order, pageNum, pageSize int) ([]int64, error)
 	GetPostSummaryFromRedis(ctx context.Context, postID []int64) (postList []DTO.PostSummary, missingIDs []int64, err error)
+
+	// DeleteRedisPost 删除 Redis 中的帖子
+	// 该方法会删除帖子的摘要信息、帖子的发布时间和帖子的热度信息
+	// 但是该方法不会删除帖子的对应的评论信息
 	DeleteRedisPost(ctx context.Context, postID int64) error
+
+	// DeleteRedisPostSummary 删除 Redis 中的帖子摘要信息
+	// 该方法会删除帖子的摘要信息，但是不会删除帖子的发布时间和帖子的热度信息
+	// 也不会删除帖子的对应的评论信息
+	// 该接口用于在帖子的摘要信息发生变化时，删除 Redis 中的旧摘要信息
+	DeleteRedisPostSummary(ctx context.Context, postID int64) error
 }
 
 type PostCache struct {
@@ -140,6 +150,20 @@ func (pc *PostCache) GetPostSummaryFromRedis(ctx context.Context, postID []int64
 }
 
 func (pc *PostCache) DeleteRedisPost(ctx context.Context, postID int64) error {
+	key := GenerateRedisKey(PostSummaryTemplate, postID)
+	if err := pc.Del(ctx, key).Err(); err != nil {
+		return err
+	}
+	if err := pc.ZRem(ctx, GenerateRedisKey(PostTimeTemplate), postID).Err(); err != nil {
+		return err
+	}
+	if err := pc.ZRem(ctx, GenerateRedisKey(PostRankingTemplate), postID).Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pc *PostCache) DeleteRedisPostSummary(ctx context.Context, postID int64) error {
 	key := GenerateRedisKey(PostSummaryTemplate, postID)
 	if err := pc.Del(ctx, key).Err(); err != nil {
 		return err

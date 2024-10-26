@@ -26,6 +26,7 @@ type PostServiceInterface interface {
 	GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, *apiError.ApiError)
 	UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError
 	GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, *apiError.ApiError)
+	DeletePost(ctx context.Context, postID int64) *apiError.ApiError
 }
 
 type PostService struct {
@@ -145,7 +146,7 @@ func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 	// 延迟双删, 保证数据一致性
 
 	// 第一次删除 Redis 中数据
-	err := ps.PostCacheInterface.DeleteRedisPost(ctx, postDTO.PostID)
+	err := ps.PostCacheInterface.DeleteRedisPostSummary(ctx, postDTO.PostID)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -177,7 +178,7 @@ func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 		ctx, cancel := context.WithTimeout(context.Background(), DelayDeleteTime)
 		defer cancel()
 		time.Sleep(2 * time.Second)
-		err := ps.PostCacheInterface.DeleteRedisPost(ctx, postDTO.PostID)
+		err := ps.PostCacheInterface.DeleteRedisPostSummary(ctx, postDTO.PostID)
 		if err != nil {
 			zap.L().Error("删除 Redis 数据失败")
 		}
@@ -202,4 +203,22 @@ func (ps *PostService) GetPostListByCommunityID(ctx context.Context, communityID
 		}
 	}
 	return list, nil
+}
+
+func (ps *PostService) DeletePost(ctx context.Context, postID int64) *apiError.ApiError {
+	err := ps.PostDaoInterface.DeletePost(ctx, postID)
+	if err != nil {
+		return &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  fmt.Sprintf("删除帖子失败: %v", err),
+		}
+	}
+	go func() {
+		err := ps.PostCacheInterface.DeleteRedisPost(context.Background(), postID)
+		if err != nil {
+			zap.L().Error("删除 Redis 中的帖子数据失败, ", zap.Error(err))
+		}
+	}()
+
+	return nil
 }

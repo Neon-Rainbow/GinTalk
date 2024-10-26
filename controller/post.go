@@ -168,6 +168,28 @@ func (ph *PostHandler) UpdatePostHandler(c *gin.Context) {
 	ResponseSuccess(c, nil)
 }
 
+func (ph *PostHandler) DeletePostHandler(c *gin.Context) {
+	var p DTO.VotePostDTO
+	if err := c.ShouldBindBodyWithJSON(&p); err != nil {
+		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
+		zap.L().Error("DeletePostHandler.ShouldBindBodyWithJSON() 失败", zap.Error(err))
+		return
+	}
+	if !isUserIDMatch(c, p.UserID) {
+		ResponseErrorWithMsg(c, code.InvalidAuth, "无权限操作")
+		zap.L().Info("DeletePostHandler.isUserIDMatch() 失败")
+		return
+	}
+
+	apiError := ph.DeletePost(c.Request.Context(), p.PostID)
+	if apiError != nil {
+		ResponseErrorWithApiError(c, apiError)
+		zap.L().Error("PostServiceInterface.DeletePost() 失败", zap.Error(apiError))
+		return
+	}
+	ResponseSuccess(c, nil)
+}
+
 // getPageInfo 获取分页信息
 func getPageInfo(c *gin.Context) (pageNum int, pageSize int) {
 	var err error
