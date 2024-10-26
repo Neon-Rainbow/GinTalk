@@ -4,6 +4,7 @@ import (
 	"GinTalk/DTO"
 	"GinTalk/pkg/code"
 	"GinTalk/service"
+	"go.uber.org/zap"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -33,16 +34,19 @@ func (ph *PostHandler) CreatePostHandler(c *gin.Context) {
 	var post DTO.PostDetail
 	if err := c.ShouldBindJSON(&post); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
+		zap.L().Error("CreatePostHandler.ShouldBindJSON() 失败", zap.Error(err))
 		return
 	}
 	if !isUserIDMatch(c, post.AuthorId) {
 		ResponseErrorWithMsg(c, code.InvalidAuth, "无权限操作")
+		zap.L().Info("CreatePostHandler.isUserIDMatch() 失败")
 		return
 	}
 
 	apiError := ph.PostServiceInterface.CreatePost(c.Request.Context(), &post)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
+		zap.L().Error("PostServiceInterface.CreatePost() 失败", zap.Error(apiError))
 		return
 	}
 	ResponseSuccess(c, nil)
@@ -64,14 +68,17 @@ func (ph *PostHandler) GetPostListHandler(c *gin.Context) {
 	order, err := strconv.Atoi(c.Query("order"))
 	if err != nil {
 		ResponseBadRequest(c, "order 字段不正确")
+		zap.L().Info("GetPostListHandler strconv.Atoi() 失败", zap.Error(err))
 		return
 	}
 	postList, apiError := ph.PostServiceInterface.GetPostList(c.Request.Context(), pageNum, pageSize, order)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
+		zap.L().Error("PostServiceInterface.GetPostList() 失败", zap.Error(apiError))
 		return
 	}
 	ResponseSuccess(c, postList)
+	return
 }
 
 // GetPostListByCommunityID 根据社区ID获取帖子列表
@@ -91,11 +98,13 @@ func (ph *PostHandler) GetPostListByCommunityID(c *gin.Context) {
 	communityID, err := strconv.ParseInt(c.Query("community_id"), 10, 64)
 	if err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
+		zap.L().Info("GetPostListByCommunityID strconv.ParseInt() 失败", zap.Error(err))
 		return
 	}
 	postList, apiError := ph.PostServiceInterface.GetPostListByCommunityID(c.Request.Context(), communityID, pageNum, pageSize)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
+		zap.L().Error("PostServiceInterface.GetPostListByCommunityID() 失败", zap.Error(apiError))
 		return
 	}
 	ResponseSuccess(c, postList)
@@ -115,12 +124,14 @@ func (ph *PostHandler) GetPostDetailHandler(c *gin.Context) {
 	postID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
+		zap.L().Info("GetPostDetailHandler strconv.ParseInt() 失败", zap.Error(err))
 		return
 	}
 
 	post, apiError := ph.PostServiceInterface.GetPostDetail(c.Request.Context(), postID)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
+		zap.L().Error("PostServiceInterface.GetPostDetail() 失败", zap.Error(apiError))
 		return
 	}
 	ResponseSuccess(c, post)
@@ -140,15 +151,18 @@ func (ph *PostHandler) UpdatePostHandler(c *gin.Context) {
 	var post DTO.PostDetail
 	if err := c.ShouldBindJSON(&post); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
+		zap.L().Error("UpdatePostHandler.ShouldBindJSON() 失败", zap.Error(err))
 		return
 	}
 	if !isUserIDMatch(c, post.AuthorId) {
 		ResponseErrorWithMsg(c, code.InvalidAuth, "无权限操作")
+		zap.L().Info("UpdatePostHandler.isUserIDMatch() 失败")
 		return
 	}
 	apiError := ph.UpdatePost(c.Request.Context(), &post)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
+		zap.L().Error("PostServiceInterface.UpdatePost() 失败", zap.Error(apiError))
 		return
 	}
 	ResponseSuccess(c, nil)

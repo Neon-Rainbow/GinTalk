@@ -35,6 +35,7 @@ func (ah *AuthHandler) LoginHandler(c *gin.Context) {
 	var loginDTO DTO.LoginRequestDTO
 	if err := c.ShouldBindJSON(&loginDTO); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
+		zap.L().Error("LoginHandler.ShouldBindJSON() 失败", zap.Error(err))
 		return
 	}
 
@@ -43,6 +44,7 @@ func (ah *AuthHandler) LoginHandler(c *gin.Context) {
 	resp, apiError := ah.AuthServiceInterface.LoginService(ctx, &loginDTO)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
+		zap.L().Error("AuthServiceInterface.LoginService() 失败", zap.Error(apiError))
 		return
 	}
 	ResponseSuccess(c, resp)
@@ -65,6 +67,7 @@ func (ah *AuthHandler) SignUpHandler(c *gin.Context) {
 	var SignupDTO DTO.SignUpRequestDTO
 	if err := c.ShouldBindJSON(&SignupDTO); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
+		zap.L().Error("SignUpHandler.ShouldBindJSON() 失败", zap.Error(err))
 		return
 	}
 	ctx := c.Request.Context()
@@ -72,6 +75,7 @@ func (ah *AuthHandler) SignUpHandler(c *gin.Context) {
 	apiError := ah.AuthServiceInterface.SignupService(ctx, &SignupDTO)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
+		zap.L().Error("AuthServiceInterface.SignupService() 失败", zap.Error(apiError))
 		return
 	}
 	ResponseSuccess(c, nil)
@@ -92,6 +96,7 @@ func (ah *AuthHandler) RefreshHandler(c *gin.Context) {
 	accessToken, refreshToken, apiError := ah.AuthServiceInterface.RefreshTokenService(ctx, oldRefreshToken)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
+		zap.L().Error("AuthServiceInterface.RefreshTokenService() 失败", zap.Error(apiError))
 		return
 	}
 	go func() {

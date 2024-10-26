@@ -5,6 +5,7 @@ import (
 	"GinTalk/logger"
 	"GinTalk/settings"
 	"net/http"
+	"time"
 
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
@@ -35,6 +36,9 @@ func SetupRouter(container *dig.Container) *gin.Engine {
 	v1 := r.Group("/api/v1").Use(
 		controller.LimitBodySizeMiddleware(),
 		requestid.New(),
+		controller.TimeoutMiddleware(
+			controller.WithTimeout(time.Second*time.Duration(settings.GetConfig().Timeout)),
+		),
 		controller.CorsMiddleware(
 			controller.WithAllowOrigins([]string{"localhost"}),
 		),

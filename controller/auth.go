@@ -7,6 +7,7 @@ import (
 	"GinTalk/pkg/jwt"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"strings"
 )
 
@@ -26,12 +27,14 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		authHeader := c.Request.Header.Get("Authorization")
 		if authHeader == "" {
 			ResponseUnAuthorized(c, "请求未携带 token")
+			zap.L().Info("请求未携带 token")
 			c.Abort()
 			return
 		}
 		parts := strings.Split(authHeader, " ")
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
 			ResponseUnAuthorized(c, "token 格式错误, 应为 `Bearer {token}`")
+			zap.L().Info("token 格式错误")
 			c.Abort()
 			return
 		}
@@ -39,11 +42,13 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		myClaims, err := jwt.ParseToken(token)
 		if err != nil {
 			ResponseUnAuthorized(c, "token 解析失败")
+			zap.L().Error("token 解析失败", zap.Error(err))
 			c.Abort()
 			return
 		}
 		if myClaims.TokenType != jwt.AccessTokenName {
 			ResponseUnAuthorized(c, "token 类型错误")
+			zap.L().Info("token 类型错误")
 			c.Abort()
 			return
 		}
@@ -52,12 +57,14 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			// 使用 authCache 实例
 			if isBlack, _ := authCache.IsTokenInBlacklist(c, token); isBlack {
 				ResponseUnAuthorized(c, "token 已过期")
+				zap.L().Info("token 已过期")
 				c.Abort()
 				return
 			}
 		})
 		if err != nil {
 			ResponseErrorWithMsg(c, code.ServerError, fmt.Sprintf("authCache.IsTokenInBlacklist() 出错: %v", err))
+			zap.L().Error("authCache.IsTokenInBlacklist() 出错", zap.Error(err))
 			c.Abort()
 			return
 		}
