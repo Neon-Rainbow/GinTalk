@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"GinTalk/DTO"
 	"GinTalk/cache"
 	"GinTalk/dao"
 	"context"
@@ -37,8 +38,11 @@ const (
 var _ KafkaInterface = (*Kafka)(nil)
 
 type KafkaInterface interface {
-	ProduceMessage(ctx context.Context, messageType string, message any) error
-	ConsumeMessages(ctx context.Context) error
+	produceMessage(ctx context.Context, msg KafkaMessage) error
+	consumeMessages(ctx context.Context) error
+	SavePostSummaryToRedis(ctx context.Context, postSummary *DTO.PostSummary) error
+	AddContentVote(ctx context.Context, postID int64) error
+	SubContentVote(ctx context.Context, postID int64) error
 	Close()
 }
 
@@ -78,7 +82,7 @@ func NewKafka(voteDao dao.PostVoteDaoInterface, voteCache cache.VoteCacheInterfa
 		postCache: postCache,
 	}
 	go func() {
-		err := k.ConsumeMessages(context.Background())
+		err := k.consumeMessages(context.Background())
 		if err != nil {
 			zap.L().Error("消费消息失败", zap.Error(err))
 		}
@@ -87,14 +91,10 @@ func NewKafka(voteDao dao.PostVoteDaoInterface, voteCache cache.VoteCacheInterfa
 }
 
 // ProduceMessage Kafka Producer：生产者函数
-func (k *Kafka) ProduceMessage(ctx context.Context, messageType string, message any) error {
+func (k *Kafka) produceMessage(ctx context.Context, message KafkaMessage) error {
 	writer := k.writer
 
-	msg := KafkaMessage{
-		MessageType: messageType,
-		Message:     message,
-	}
-	msgBytes, err := json.Marshal(msg)
+	msgBytes, err := json.Marshal(message)
 	if err != nil {
 		return err
 	}
@@ -107,12 +107,12 @@ func (k *Kafka) ProduceMessage(ctx context.Context, messageType string, message 
 		zap.L().Error("发送消息失败", zap.Error(err))
 		return err
 	}
-	zap.L().Info("发送消息成功, 消息内容: ", zap.Any("message", msg))
+	zap.L().Info("发送消息成功, 消息内容: ", zap.Any("message", message))
 	return nil
 }
 
 // ConsumeMessages Kafka Consumer：消费者函数
-func (k *Kafka) ConsumeMessages(ctx context.Context) error {
+func (k *Kafka) consumeMessages(ctx context.Context) error {
 	reader := k.reader
 
 	zap.L().Info("开始消费消息")
@@ -202,4 +202,28 @@ func ResetKafkaTopic() error {
 	}
 	zap.L().Info("Topic created successfully")
 	return nil
+}
+
+func (k *Kafka) SavePostSummaryToRedis(ctx context.Context, postSummary *DTO.PostSummary) error {
+	msg := KafkaMessage{
+		MessageType: MessageTypeSavePostToRedis,
+		Message:     *postSummary,
+	}
+	return k.produceMessage(ctx, msg)
+}
+
+func (k *Kafka) AddContentVote(ctx context.Context, postID int64) error {
+	msg := KafkaMessage{
+		MessageType: MessageTypeAddPostVote,
+		Message:     postID,
+	}
+	return k.produceMessage(ctx, msg)
+}
+
+func (k *Kafka) SubContentVote(ctx context.Context, postID int64) error {
+	msg := KafkaMessage{
+		MessageType: MessageTypeSubPostVote,
+		Message:     postID,
+	}
+	return k.produceMessage(ctx, msg)
 }

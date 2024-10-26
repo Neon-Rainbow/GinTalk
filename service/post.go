@@ -74,7 +74,7 @@ func (ps *PostService) CreatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 
 	// 将帖子 ID 存入 Redis
 	go func() {
-		err := ps.KafkaInterface.ProduceMessage(context.Background(), kafka.MessageTypeSavePostToRedis, postSummary)
+		err := ps.KafkaInterface.SavePostSummaryToRedis(context.Background(), postSummary)
 		if err != nil {
 			zap.L().Error("Kafka 生产消息失败", zap.Error(err))
 		}
@@ -120,7 +120,7 @@ func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize in
 	// 将缺失的帖子存入 Redis
 	go func() {
 		for _, post := range list {
-			err := ps.KafkaInterface.ProduceMessage(context.Background(), kafka.MessageTypeSavePostToRedis, post)
+			err := ps.KafkaInterface.SavePostSummaryToRedis(context.Background(), &post)
 			if err != nil {
 				zap.L().Error("保存帖子到 Redis 失败", zap.Error(err))
 			}

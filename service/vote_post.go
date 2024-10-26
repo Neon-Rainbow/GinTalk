@@ -5,7 +5,6 @@ import (
 	"GinTalk/cache"
 	"GinTalk/dao"
 	"GinTalk/kafka"
-	"GinTalk/model"
 	"GinTalk/pkg/apiError"
 	"GinTalk/pkg/code"
 	"context"
@@ -69,11 +68,8 @@ func (v *VoteService) VotePost(ctx context.Context, postID int64, userID int64) 
 		}
 	}
 
-	msg := model.KafkaVotePostModel{
-		PostId: fmt.Sprintf("%d", postID),
-	}
 	go func() {
-		err := v.KafkaInterface.ProduceMessage(context.Background(), kafka.MessageTypeAddPostVote, msg)
+		err := v.KafkaInterface.AddContentVote(context.Background(), postID)
 		if err != nil {
 			zap.L().Error("Failed to produce message", zap.Error(err))
 		}
@@ -107,11 +103,8 @@ func (v *VoteService) RevokeVotePost(ctx context.Context, postID int64, userID i
 		}
 	}
 
-	msg := model.KafkaVotePostModel{
-		PostId: fmt.Sprintf("%d", postID),
-	}
 	go func() {
-		err := v.KafkaInterface.ProduceMessage(context.Background(), kafka.MessageTypeSubPostVote, msg)
+		err := v.KafkaInterface.SubContentVote(context.Background(), postID)
 		if err != nil {
 			zap.L().Error("Failed to produce message", zap.Error(err))
 		}
