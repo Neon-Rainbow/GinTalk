@@ -14,8 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
+var container *dig.Container
+
 func BuildContainer() *dig.Container {
-	container := dig.New()
+	container = dig.New()
 
 	container.Provide(MySQL.GetDB)
 	container.Provide(Redis.GetRedisClient)
@@ -101,5 +103,9 @@ func BuildContainer() *dig.Container {
 		return controller.NewVoteCommentController(service)
 	})
 
+	return container
+}
+
+func GetContainer() *dig.Container {
 	return container
 }
