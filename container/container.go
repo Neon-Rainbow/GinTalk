@@ -58,6 +58,10 @@ func BuildContainer() *dig.Container {
 		return kafka.NewKafka(votePost, voteCache, postCache)
 	})
 
+	container.Provide(func(voteDao dao.PostVoteDaoInterface, voteCache cache.VoteCacheInterface) kafka.MessageHandle {
+		return kafka.NewVoteHandle(voteDao, voteCache)
+	})
+
 	// 提供 Service 实例
 	container.Provide(func(dao dao.CommentDaoInterface) service.CommentServiceInterface {
 		return service.NewCommentService(dao)
