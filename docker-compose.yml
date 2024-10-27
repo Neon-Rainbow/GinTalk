@@ -28,7 +28,7 @@ services:
     image: bitnami/kafka:latest
     container_name: kafka_broker
     environment:
-      KAFKA_CFG_PROCESS_ROLES: "broker"
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
       KAFKA_CFG_NODE_ID: "1"
       KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093"
       KAFKA_CFG_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
@@ -43,6 +43,7 @@ services:
       - "9093:9093"
     volumes:
       - kafka_data:/bitnami/kafka
+
 
 volumes:
   mysql_data:
