@@ -38,6 +38,9 @@ type PostVoteDaoInterface interface {
 
 	// GetPostCreateTime 获取帖子的创建时间
 	GetPostCreateTime(ctx context.Context, postID int64) (time.Time, error)
+
+	// AddPostVoteWithTx 事务中添加投票
+	AddPostVoteWithTx(ctx context.Context, postID int64, userID int64, vote int) error
 }
 
 type PostVoteDao struct {
@@ -151,6 +154,44 @@ func (p *PostVoteDao) CheckUserVotedPost(ctx context.Context, postID int64, user
 		WHERE post_id = ? AND user_id = ? AND delete_time = 0`
 	err := p.DB.WithContext(ctx).Raw(sqlStr, postID, userID).Scan(&count).Error
 	return count > 0, err
+}
+
+func (p *PostVoteDao) AddPostVoteWithTx(ctx context.Context, postID int64, userID int64, vote int) error {
+	tx := p.DB.WithContext(ctx).Begin()
+	if err := tx.Error; err != nil {
+		return err
+	}
+	var sqlStr string
+	if vote > 0 {
+		sqlStr = `
+		INSERT INTO vote_post (post_id, user_id, vote)
+		VALUES (?, ?, ?)	
+`
+	} else {
+		sqlStr = `
+		DELETE FROM vote_post
+		WHERE post_id = ? AND user_id = ?`
+	}
+	if err := tx.Exec(sqlStr, postID, userID, vote).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if vote > 0 {
+		sqlStr = `
+		UPDATE content_votes
+		SET vote = vote + 1
+		WHERE post_id = ? AND delete_time = 0`
+	} else {
+		sqlStr = `
+		UPDATE content_votes
+		SET vote = vote - 1
+		WHERE post_id = ? AND delete_time = 0`
+	}
+	if err := tx.Exec(sqlStr, postID).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit().Error
 }
 
 func NewPostVoteDao(db *gorm.DB) *PostVoteDao {
