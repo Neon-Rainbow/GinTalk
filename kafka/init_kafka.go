@@ -1,12 +1,11 @@
 package kafka
 
 import (
+	"GinTalk/DTO"
 	"GinTalk/cache"
 	"GinTalk/dao"
 	"context"
 	"encoding/json"
-	"github.com/segmentio/kafka-go"
-	"go.uber.org/zap"
 	"log"
 	"net"
 	"os"
@@ -15,6 +14,9 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/segmentio/kafka-go"
+	"go.uber.org/zap"
 )
 
 const (
@@ -102,21 +104,68 @@ type MessageHandle interface {
 
 var handles map[string]MessageHandle
 
-var _ MessageHandle = (*VoteHandle)(nil)
+var _ MessageHandle = (*VotePostHandle)(nil)
 
-type VoteHandle struct {
+type VotePostHandle struct {
 	voteDao   dao.PostVoteDaoInterface
 	voteCache cache.VoteCacheInterface
 }
 
-func NewVoteHandle(voteDao dao.PostVoteDaoInterface, voteCache cache.VoteCacheInterface) MessageHandle {
-	return &VoteHandle{
+func NewVotePostHandle(voteDao dao.PostVoteDaoInterface, voteCache cache.VoteCacheInterface) MessageHandle {
+	return &VotePostHandle{
 		voteDao:   voteDao,
 		voteCache: voteCache,
 	}
 }
 
-func (v *VoteHandle) HandleMessage(msg kafka.Message) {
+var _ MessageHandle = (*PostHandle)(nil)
+
+type PostHandle struct {
+	postDao   dao.PostDaoInterface
+	postCache cache.PostCacheInterface
+}
+
+func NewPostHandle(postDao dao.PostDaoInterface, postCache cache.PostCacheInterface) MessageHandle {
+	return &PostHandle{
+		postDao:   postDao,
+		postCache: postCache,
+	}
+}
+
+// HandleMessage 处理帖子消息
+// 帖子消息格式：{"post_id": "1", "author_id": "1", "community_id": "1", "title": "标题", "content": "内容"}
+// 处理消息时，需要将帖子保存到数据库和 Redis 中
+// 保存到数据库时，需要生成帖子摘要
+// 该接口可以将发布帖子的过程通过消息队列实现异步化
+func (p *PostHandle) HandleMessage(msg kafka.Message) {
+	var postMsg DTO.PostDetail
+	if err := json.Unmarshal(msg.Value, &postMsg); err != nil {
+		zap.L().Error("序列化消息失败", zap.Error(err))
+		return
+	}
+
+	summary := postMsg.GenerateSummary()
+
+	// 保存帖子到数据库
+	err := p.postDao.CreatePost(context.Background(), &postMsg, summary)
+	if err != nil {
+		zap.L().Error("保存帖子到数据库失败", zap.Error(err))
+		return
+	}
+	// 保存帖子到 Redis
+	err = p.postCache.SavePostToRedis(context.Background(), postMsg.ConvertToSummary())
+	if err != nil {
+		zap.L().Error("保存帖子到 Redis 失败", zap.Error(err))
+		return
+	}
+	zap.L().Info("保存帖子成功", zap.Int64("post_id", postMsg.PostID))
+}
+
+// HandleMessage 处理投票帖子消息
+// 投票消息格式：{"post_id": "1", "user_id": "1", "vote": 1}
+// 投票数为 1 时表示赞成，为 -1 时表示反对,为 0 时表示取消投票
+// 投票消息会增加投票记录,更新帖子的投票数,并且重新计算 Redis 热度
+func (v *VotePostHandle) HandleMessage(msg kafka.Message) {
 	// 处理消息
 	var voteMsg Vote
 	if err := json.Unmarshal(msg.Value, &voteMsg); err != nil {
@@ -133,7 +182,7 @@ func (v *VoteHandle) HandleMessage(msg kafka.Message) {
 		zap.L().Error("转换 user id 失败", zap.Error(err))
 		return
 	}
-	// 向数据库中添加投票记录
+	// 向数据库中添加投票记录和更新投票数
 	err = v.voteDao.AddPostVoteWithTx(context.Background(), postID, userID, voteMsg.Vote)
 	if err != nil {
 		zap.L().Error("添加投票记录失败", zap.Error(err))

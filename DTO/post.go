@@ -1,5 +1,7 @@
 package DTO
 
+const MaxSummaryLength = 100
+
 type PostDetail struct {
 	PostID        int64  `json:"post_id,omitempty" db:"post_id"`
 	Title         string `json:"title,omitempty" db:"title"`
@@ -9,6 +11,25 @@ type PostDetail struct {
 	CommunityID   int64  `json:"community_id,omitempty" db:"community_id"`
 	CommunityName string `json:"community_name,omitempty" db:"community_name"`
 	Status        int32  `json:"status,omitempty" db:"status"`
+}
+
+func (p *PostDetail) GenerateSummary() string {
+	runes := []rune(p.Content)
+	if len(runes) <= MaxSummaryLength {
+		return p.Content
+	}
+	return string(runes[:MaxSummaryLength]) + "..."
+}
+
+func (p *PostDetail) ConvertToSummary() *PostSummary {
+	return &PostSummary{
+		PostID:        p.PostID,
+		Title:         p.Title,
+		AuthorId:      p.AuthorId,
+		Username:      p.Username,
+		CommunityID:   p.CommunityID,
+		CommunityName: p.CommunityName,
+	}
 }
 
 // PostSummary 帖子摘要

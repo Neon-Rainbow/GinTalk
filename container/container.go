@@ -9,6 +9,7 @@ import (
 	"GinTalk/dao/Redis"
 	"GinTalk/kafka"
 	"GinTalk/service"
+
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/dig"
 	"gorm.io/gorm"
@@ -59,7 +60,7 @@ func BuildContainer() *dig.Container {
 	})
 
 	container.Provide(func(voteDao dao.PostVoteDaoInterface, voteCache cache.VoteCacheInterface) kafka.MessageHandle {
-		return kafka.NewVoteHandle(voteDao, voteCache)
+		return kafka.NewVotePostHandle(voteDao, voteCache)
 	})
 
 	// 提供 Service 实例
