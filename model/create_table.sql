@@ -160,7 +160,7 @@ CREATE TABLE `vote_post`
     `id`          bigint(20) NOT NULL AUTO_INCREMENT COMMENT '自增主键，唯一标识每条投票记录',
     `post_id`     bigint(20) NOT NULL COMMENT '投票所属的帖子ID',
     `user_id`     bigint(20) NOT NULL COMMENT '投票用户的用户ID',
-    `vote`        tinyint(4) NOT NULL COMMENT '投票类型：1-赞',
+    `vote`        tinyint(4) NOT NULL DEFAULT 1 COMMENT '投票类型：1-赞',
     `create_time` timestamp  NULL DEFAULT CURRENT_TIMESTAMP COMMENT '投票创建时间，默认当前时间',
     `update_time` timestamp  NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '投票更新时间，每次更新时自动修改',
     `delete_time` bigint  NULL DEFAULT 0 COMMENT '逻辑删除时间，NULL表示未删除',

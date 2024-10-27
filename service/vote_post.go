@@ -12,29 +12,9 @@ import (
 	"strconv"
 )
 
+// VotePost 投票
+// 投票使用kafka异步处理
 func VotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError {
-	isVoted, err := dao.CheckUserVotedPost(ctx, postID, userID)
-	if err != nil {
-		return &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  "查询投票记录失败",
-		}
-	}
-	if isVoted {
-		return &apiError.ApiError{
-			Code: code.InvalidParam,
-			Msg:  "已经投过票",
-		}
-	}
-
-	err = dao.AddPostVote(ctx, postID, userID)
-	if err != nil {
-		return &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  "投票失败",
-		}
-	}
-
 	go func() {
 		err := kafka.SendLikeMessage(context.Background(), &kafka.Vote{PostID: strconv.FormatInt(postID, 10), UserID: strconv.FormatInt(userID, 10), Vote: 1})
 		if err != nil {
@@ -47,29 +27,8 @@ func VotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiErro
 }
 
 // RevokeVotePost 取消投票
+// 取消投票使用kafka异步处理
 func RevokeVotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError {
-	isVoted, err := dao.CheckUserVotedPost(ctx, postID, userID)
-	if err != nil {
-		return &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  "查询投票记录失败",
-		}
-	}
-	if !isVoted {
-		return &apiError.ApiError{
-			Code: code.InvalidParam,
-			Msg:  "未投过票",
-		}
-	}
-
-	err = dao.RevokePostVote(ctx, postID, userID)
-	if err != nil {
-		return &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  "取消投票失败",
-		}
-	}
-
 	go func() {
 		err := kafka.SendLikeMessage(context.Background(), &kafka.Vote{PostID: strconv.FormatInt(postID, 10), UserID: strconv.FormatInt(userID, 10), Vote: -1})
 		if err != nil {

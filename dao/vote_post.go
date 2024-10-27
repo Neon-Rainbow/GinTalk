@@ -5,6 +5,7 @@ import (
 	"GinTalk/dao/MySQL"
 	"GinTalk/model"
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -125,17 +126,18 @@ func AddPostVoteWithTx(ctx context.Context, postID int64, userID int64, vote int
 	var sqlStr string
 	if vote > 0 {
 		sqlStr = `
-		INSERT INTO vote_post (post_id, user_id, vote)
-		VALUES (?, ?, ?)	
+		INSERT INTO vote_post (post_id, user_id)
+		VALUES (?, ?)	
 `
 	} else {
 		sqlStr = `
 		DELETE FROM vote_post
 		WHERE post_id = ? AND user_id = ?`
 	}
-	if err := tx.Exec(sqlStr, postID, userID, vote).Error; err != nil {
+	result := tx.Exec(sqlStr, postID, userID)
+	if result.Error != nil || result.RowsAffected == 0 {
 		tx.Rollback()
-		return err
+		return fmt.Errorf("vote failed")
 	}
 	if vote > 0 {
 		sqlStr = `
