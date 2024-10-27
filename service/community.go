@@ -10,31 +10,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// CommunityServiceInterface 的实现
-var _ CommunityServiceInterface = (*CommunityService)(nil)
-
-// CommunityServiceInterface 定义社区服务的接口
-type CommunityServiceInterface interface {
-	GetCommunityList(ctx context.Context) ([]*DTO.CommunityNameDTO, *apiError.ApiError)
-	GetCommunityDetail(ctx context.Context, communityID int32) (*DTO.CommunityDetailDTO, *apiError.ApiError)
-}
-
-// CommunityService 是 CommunityServiceInterface 的实现
-type CommunityService struct {
-	dao.CommunityDaoInterface
-}
-
-// NewCommunityService 使用依赖注入初始化 CommunityService
-func NewCommunityService(communityDaoInterface dao.CommunityDaoInterface) CommunityServiceInterface {
-	return &CommunityService{
-		CommunityDaoInterface: communityDaoInterface,
-	}
-}
-
 // GetCommunityList 获取社区列表
-func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*DTO.CommunityNameDTO, *apiError.ApiError) {
+func GetCommunityList(ctx context.Context) ([]*DTO.CommunityNameDTO, *apiError.ApiError) {
 	// 使用 DAO 获取社区列表
-	communities, err := s.CommunityDaoInterface.GetCommunityList(ctx)
+	communities, err := dao.GetCommunityList(ctx)
 
 	if err != nil {
 		return nil, &apiError.ApiError{
@@ -56,9 +35,9 @@ func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*DTO.Communi
 }
 
 // GetCommunityDetail 获取社区详情
-func (s *CommunityService) GetCommunityDetail(ctx context.Context, communityID int32) (*DTO.CommunityDetailDTO, *apiError.ApiError) {
+func GetCommunityDetail(ctx context.Context, communityID int32) (*DTO.CommunityDetailDTO, *apiError.ApiError) {
 	// 使用 DAO 获取社区详情
-	community, err := s.CommunityDaoInterface.GetCommunityDetail(ctx, communityID)
+	community, err := dao.GetCommunityDetail(ctx, communityID)
 
 	// 处理错误
 	if err != nil {

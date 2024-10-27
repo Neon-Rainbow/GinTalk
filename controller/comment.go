@@ -9,16 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type CommentController struct {
-	CommentService service.CommentServiceInterface
-}
-
-func NewCommentController(service service.CommentServiceInterface) *CommentController {
-	return &CommentController{
-		CommentService: service,
-	}
-}
-
 // GetTopComments 获取主评论
 // @Summary 获取主评论
 // @Tags 评论
@@ -29,7 +19,7 @@ func NewCommentController(service service.CommentServiceInterface) *CommentContr
 // @Param page_num query string true "页码"
 // @Success 200 {object} CommentListResponse
 // @Router /api/v1/comment/top [get]
-func (cc *CommentController) GetTopComments(c *gin.Context) {
+func GetTopComments(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_postID := c.Query("post_id")
 	pageNum, pageSize := getPageInfo(c)
@@ -43,7 +33,7 @@ func (cc *CommentController) GetTopComments(c *gin.Context) {
 	postID := int64(_postIDInt)
 
 	// 3. 调用 service 获取数据
-	commentList, apiError := cc.CommentService.GetTopComments(c, postID, pageSize, pageNum)
+	commentList, apiError := service.GetTopComments(c, postID, pageSize, pageNum)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -63,7 +53,7 @@ func (cc *CommentController) GetTopComments(c *gin.Context) {
 // @Param page_num query string true "页码"
 // @Success 200 {object} CommentListResponse
 // @Router /api/v1/comment/sub [get]
-func (cc *CommentController) GetSubComments(c *gin.Context) {
+func GetSubComments(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_postID := c.Query("post_id")
 	_parentID := c.Query("parent_id")
@@ -83,7 +73,7 @@ func (cc *CommentController) GetSubComments(c *gin.Context) {
 	}
 	parentID := int64(_parentIDInt)
 	// 3. 调用 service 获取数据
-	commentList, apiError := cc.CommentService.GetSubComments(c, postID, parentID, pageSize, pageNum)
+	commentList, apiError := service.GetSubComments(c, postID, parentID, pageSize, pageNum)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -100,7 +90,7 @@ func (cc *CommentController) GetSubComments(c *gin.Context) {
 // @Param comment_id query string true "评论ID"
 // @Success 200 {object} Comment
 // @Router /api/v1/comment [get]
-func (cc *CommentController) GetCommentByID(c *gin.Context) {
+func GetCommentByID(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_commentID := c.Query("comment_id")
 
@@ -111,7 +101,7 @@ func (cc *CommentController) GetCommentByID(c *gin.Context) {
 		return
 	}
 	// 3. 调用 service 获取数据
-	comment, apiError := cc.CommentService.GetCommentByID(c, int64(commentID))
+	comment, apiError := service.GetCommentByID(c, int64(commentID))
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -121,7 +111,7 @@ func (cc *CommentController) GetCommentByID(c *gin.Context) {
 }
 
 // CreateComment 创建评论
-func (cc *CommentController) CreateComment(c *gin.Context) {
+func CreateComment(c *gin.Context) {
 	// 1. 从请求中获取参数
 	var comment DTO.CreateCommentRequest
 	if err := c.ShouldBindJSON(&comment); err != nil {
@@ -140,7 +130,7 @@ func (cc *CommentController) CreateComment(c *gin.Context) {
 	comment.AuthorID = userID.(int64)
 
 	// 3. 调用 service 获取数据
-	apiError := cc.CommentService.CreateComment(c, &comment)
+	apiError := service.CreateComment(c, &comment)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -150,7 +140,7 @@ func (cc *CommentController) CreateComment(c *gin.Context) {
 }
 
 // UpdateComment 更新评论
-func (cc *CommentController) UpdateComment(c *gin.Context) {
+func UpdateComment(c *gin.Context) {
 	// 1. 从请求中获取参数
 	var comment DTO.Comment
 	if err := c.ShouldBindJSON(&comment); err != nil {
@@ -163,7 +153,7 @@ func (cc *CommentController) UpdateComment(c *gin.Context) {
 		return
 	}
 	// 3. 调用 service 获取数据
-	apiError := cc.CommentService.UpdateComment(c, &comment)
+	apiError := service.UpdateComment(c, &comment)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -173,7 +163,7 @@ func (cc *CommentController) UpdateComment(c *gin.Context) {
 }
 
 // DeleteComment 删除评论
-func (cc *CommentController) DeleteComment(c *gin.Context) {
+func DeleteComment(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_commentID := c.Query("comment_id")
 
@@ -184,7 +174,7 @@ func (cc *CommentController) DeleteComment(c *gin.Context) {
 		return
 	}
 	// 3. 调用 service 获取数据
-	apiError := cc.CommentService.DeleteComment(c, int64(commentID))
+	apiError := service.DeleteComment(c, int64(commentID))
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -193,7 +183,7 @@ func (cc *CommentController) DeleteComment(c *gin.Context) {
 	ResponseSuccess(c, nil)
 }
 
-func (cc *CommentController) GetCommentCount(c *gin.Context) {
+func GetCommentCount(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_postID := c.Query("post_id")
 
@@ -204,7 +194,7 @@ func (cc *CommentController) GetCommentCount(c *gin.Context) {
 		return
 	}
 	//3. 调用 service 获取数据
-	commentCount, apiError := cc.CommentService.GetCommentCount(c, int64(postID))
+	commentCount, apiError := service.GetCommentCount(c, int64(postID))
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -213,7 +203,7 @@ func (cc *CommentController) GetCommentCount(c *gin.Context) {
 	ResponseSuccess(c, commentCount)
 }
 
-func (cc *CommentController) GetTopCommentCount(c *gin.Context) {
+func GetTopCommentCount(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_postID := c.Query("post_id")
 
@@ -224,7 +214,7 @@ func (cc *CommentController) GetTopCommentCount(c *gin.Context) {
 		return
 	}
 	//3. 调用 service 获取数据
-	commentCount, apiError := cc.CommentService.GetTopCommentCount(c, int64(postID))
+	commentCount, apiError := service.GetTopCommentCount(c, int64(postID))
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -233,7 +223,7 @@ func (cc *CommentController) GetTopCommentCount(c *gin.Context) {
 	ResponseSuccess(c, commentCount)
 }
 
-func (cc *CommentController) GetSubCommentCount(c *gin.Context) {
+func GetSubCommentCount(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_parentID := c.Query("parent_id")
 
@@ -244,7 +234,7 @@ func (cc *CommentController) GetSubCommentCount(c *gin.Context) {
 		return
 	}
 	//3. 调用 service 获取数据
-	commentCount, apiError := cc.CommentService.GetSubCommentCount(c, int64(parentID))
+	commentCount, apiError := service.GetSubCommentCount(c, int64(parentID))
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -253,7 +243,7 @@ func (cc *CommentController) GetSubCommentCount(c *gin.Context) {
 	ResponseSuccess(c, commentCount)
 }
 
-func (cc *CommentController) GetCommentCountByUserID(c *gin.Context) {
+func GetCommentCountByUserID(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_userID := c.Query("user_id")
 
@@ -264,7 +254,7 @@ func (cc *CommentController) GetCommentCountByUserID(c *gin.Context) {
 		return
 	}
 	//3. 调用 service 获取数据
-	commentCount, apiError := cc.CommentService.GetCommentCountByUserID(c, int64(userID))
+	commentCount, apiError := service.GetCommentCountByUserID(c, int64(userID))
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -273,7 +263,7 @@ func (cc *CommentController) GetCommentCountByUserID(c *gin.Context) {
 	ResponseSuccess(c, commentCount)
 }
 
-func (cc *CommentController) GetCommentByCommentID(c *gin.Context) {
+func GetCommentByCommentID(c *gin.Context) {
 	// 1. 从请求中获取参数
 	_commentID := c.Query("comment_id")
 
@@ -284,7 +274,7 @@ func (cc *CommentController) GetCommentByCommentID(c *gin.Context) {
 		return
 	}
 	//3. 调用 service 获取数据
-	comment, apiError := cc.CommentService.GetCommentByID(c, int64(commentID))
+	comment, apiError := service.GetCommentByID(c, int64(commentID))
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return

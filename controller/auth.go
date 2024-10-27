@@ -2,7 +2,6 @@ package controller
 
 import (
 	"GinTalk/cache"
-	"GinTalk/dao/Redis"
 	"GinTalk/pkg/code"
 	"GinTalk/pkg/jwt"
 	"fmt"
@@ -23,7 +22,6 @@ const (
 // 如果用户未登录, 会返回错误响应
 // 如果 token 在黑名单中, 会返回错误响应
 func JWTAuthMiddleware() gin.HandlerFunc {
-	authCache := cache.NewAuthCache(Redis.GetRedisClient())
 	return func(c *gin.Context) {
 		authHeader := c.Request.Header.Get("Authorization")
 		if authHeader == "" {
@@ -54,7 +52,7 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		exist, err := authCache.IsTokenInBlacklist(c.Request.Context(), token)
+		exist, err := cache.IsTokenInBlacklist(c.Request.Context(), token)
 		if exist {
 			ResponseUnAuthorized(c, "token 已失效")
 			zap.L().Info("token 已失效")

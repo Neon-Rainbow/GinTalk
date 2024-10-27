@@ -23,3 +23,8 @@ type CommentRelation struct {
 	ParentID  int64 `json:"parent_id" db:"parent_id"`
 	ReplyID   int64 `json:"reply_id" db:"reply_id"`
 }
+
+type CommentDetail struct {
+	*Comment
+	*CommentRelation
+}

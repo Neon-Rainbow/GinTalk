@@ -10,29 +10,9 @@ import (
 	"context"
 )
 
-type CommentServiceInterface interface {
-	GetTopComments(ctx context.Context, postID int64, pageSize, pageNum int) ([]DTO.Comment, *apiError.ApiError)
-	GetSubComments(ctx context.Context, postID, parentID int64, pageSize, pageNum int) ([]DTO.Comment, *apiError.ApiError)
-	GetCommentByID(ctx context.Context, commentID int64) (*DTO.Comment, *apiError.ApiError)
-	CreateComment(ctx context.Context, comment *DTO.CreateCommentRequest) *apiError.ApiError
-	UpdateComment(ctx context.Context, comment *DTO.Comment) *apiError.ApiError
-	DeleteComment(ctx context.Context, commentID int64) *apiError.ApiError
-	GetCommentCount(ctx context.Context, postID int64) (int64, *apiError.ApiError)
-	GetTopCommentCount(ctx context.Context, postID int64) (int64, *apiError.ApiError)
-	GetSubCommentCount(ctx context.Context, parentID int64) (int64, *apiError.ApiError)
-	GetCommentCountByUserID(ctx context.Context, userID int64) (int64, *apiError.ApiError)
-}
-
-type CommentService struct {
-	dao.CommentDaoInterface
-}
-
-func NewCommentService(dao dao.CommentDaoInterface) CommentServiceInterface {
-	return &CommentService{dao}
-}
-
-func (cs *CommentService) GetTopComments(ctx context.Context, postID int64, pageSize, pageNum int) ([]DTO.Comment, *apiError.ApiError) {
-	comments, err := cs.CommentDaoInterface.GetTopComments(ctx, postID, pageSize, pageNum)
+// GetTopComments 获取帖子的顶级评论
+func GetTopComments(ctx context.Context, postID int64, pageSize, pageNum int) ([]DTO.Comment, *apiError.ApiError) {
+	comments, err := dao.GetTopComments(ctx, postID, pageSize, pageNum)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -53,8 +33,9 @@ func (cs *CommentService) GetTopComments(ctx context.Context, postID int64, page
 	return resp, nil
 }
 
-func (cs *CommentService) GetSubComments(ctx context.Context, postID, parentID int64, pageSize, pageNum int) ([]DTO.Comment, *apiError.ApiError) {
-	comments, err := cs.CommentDaoInterface.GetSubComments(ctx, postID, parentID, pageSize, pageNum)
+// GetSubComments 获取帖子的子评论
+func GetSubComments(ctx context.Context, postID, parentID int64, pageSize, pageNum int) ([]DTO.Comment, *apiError.ApiError) {
+	comments, err := dao.GetSubComments(ctx, postID, parentID, pageSize, pageNum)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -74,8 +55,9 @@ func (cs *CommentService) GetSubComments(ctx context.Context, postID, parentID i
 	return resp, nil
 }
 
-func (cs *CommentService) GetCommentByID(ctx context.Context, commentID int64) (*DTO.Comment, *apiError.ApiError) {
-	comment, err := cs.CommentDaoInterface.GetCommentByID(ctx, commentID)
+// GetCommentByID 获取评论
+func GetCommentByID(ctx context.Context, commentID int64) (*DTO.Comment, *apiError.ApiError) {
+	comment, err := dao.GetCommentByID(ctx, commentID)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -92,7 +74,8 @@ func (cs *CommentService) GetCommentByID(ctx context.Context, commentID int64) (
 	return resp, nil
 }
 
-func (cs *CommentService) CreateComment(ctx context.Context, comment *DTO.CreateCommentRequest) *apiError.ApiError {
+// CreateComment 创建评论
+func CreateComment(ctx context.Context, comment *DTO.CreateCommentRequest) *apiError.ApiError {
 	id, _ := snowflake.GetID()
 	commentModel := &model.Comment{
 		CommentID:  id,
@@ -102,7 +85,7 @@ func (cs *CommentService) CreateComment(ctx context.Context, comment *DTO.Create
 		Content:    comment.Content,
 		Status:     1,
 	}
-	err := cs.CommentDaoInterface.CreateComment(ctx, commentModel, comment.ReplyID, comment.ParentID)
+	err := dao.CreateComment(ctx, commentModel, comment.ReplyID, comment.ParentID)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -112,8 +95,9 @@ func (cs *CommentService) CreateComment(ctx context.Context, comment *DTO.Create
 	return nil
 }
 
-func (cs *CommentService) UpdateComment(ctx context.Context, comment *DTO.Comment) *apiError.ApiError {
-	err := cs.CommentDaoInterface.UpdateComment(ctx, comment.CommentID, comment.Content)
+// UpdateComment 更新评论
+func UpdateComment(ctx context.Context, comment *DTO.Comment) *apiError.ApiError {
+	err := dao.UpdateComment(ctx, comment.CommentID, comment.Content)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -123,8 +107,9 @@ func (cs *CommentService) UpdateComment(ctx context.Context, comment *DTO.Commen
 	return nil
 }
 
-func (cs *CommentService) DeleteComment(ctx context.Context, commentID int64) *apiError.ApiError {
-	err := cs.CommentDaoInterface.DeleteComment(ctx, commentID)
+// DeleteComment 删除评论
+func DeleteComment(ctx context.Context, commentID int64) *apiError.ApiError {
+	err := dao.DeleteComment(ctx, commentID)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -134,8 +119,9 @@ func (cs *CommentService) DeleteComment(ctx context.Context, commentID int64) *a
 	return nil
 }
 
-func (cs *CommentService) GetCommentCount(ctx context.Context, postID int64) (int64, *apiError.ApiError) {
-	count, err := cs.CommentDaoInterface.GetCommentCount(ctx, postID)
+// GetCommentCount 获取评论数量
+func GetCommentCount(ctx context.Context, postID int64) (int64, *apiError.ApiError) {
+	count, err := dao.GetCommentCount(ctx, postID)
 	if err != nil {
 		return 0, &apiError.ApiError{
 			Code: code.ServerError,
@@ -145,8 +131,9 @@ func (cs *CommentService) GetCommentCount(ctx context.Context, postID int64) (in
 	return count, nil
 }
 
-func (cs *CommentService) GetTopCommentCount(ctx context.Context, postID int64) (int64, *apiError.ApiError) {
-	count, err := cs.CommentDaoInterface.GetTopCommentCount(ctx, postID)
+// GetTopCommentCount 获取顶级评论数量
+func GetTopCommentCount(ctx context.Context, postID int64) (int64, *apiError.ApiError) {
+	count, err := dao.GetTopCommentCount(ctx, postID)
 	if err != nil {
 		return 0, &apiError.ApiError{
 			Code: code.ServerError,
@@ -156,8 +143,9 @@ func (cs *CommentService) GetTopCommentCount(ctx context.Context, postID int64) 
 	return count, nil
 }
 
-func (cs *CommentService) GetSubCommentCount(ctx context.Context, parentID int64) (int64, *apiError.ApiError) {
-	count, err := cs.CommentDaoInterface.GetSubCommentCount(ctx, parentID)
+// GetSubCommentCount 获取子评论数量
+func GetSubCommentCount(ctx context.Context, parentID int64) (int64, *apiError.ApiError) {
+	count, err := dao.GetSubCommentCount(ctx, parentID)
 	if err != nil {
 		return 0, &apiError.ApiError{
 			Code: code.ServerError,
@@ -167,8 +155,8 @@ func (cs *CommentService) GetSubCommentCount(ctx context.Context, parentID int64
 	return count, nil
 }
 
-func (cs *CommentService) GetCommentCountByUserID(ctx context.Context, userID int64) (int64, *apiError.ApiError) {
-	count, err := cs.CommentDaoInterface.GetCommentCountByUserID(ctx, userID)
+func GetCommentCountByUserID(ctx context.Context, userID int64) (int64, *apiError.ApiError) {
+	count, err := dao.GetCommentCountByUserID(ctx, userID)
 	if err != nil {
 		return 0, &apiError.ApiError{
 			Code: code.ServerError,

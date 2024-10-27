@@ -2,51 +2,18 @@ package service
 
 import (
 	"GinTalk/DTO"
-	"GinTalk/cache"
 	"GinTalk/dao"
 	"GinTalk/kafka"
 	"GinTalk/pkg/apiError"
 	"GinTalk/pkg/code"
 	"context"
 	"fmt"
-	"time"
-
 	"go.uber.org/zap"
+	"strconv"
 )
 
-var _ VotePostServiceInterface = (*VoteService)(nil)
-
-type VotePostServiceInterface interface {
-	// VotePost 用于投票
-	VotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError
-
-	// RevokeVotePost 用于取消投票
-	RevokeVotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError
-
-	// MyVotePostList 用于查询用户投票过的帖子
-	MyVotePostList(ctx context.Context, userID int64, pageNum, pageSize int) ([]int64, *apiError.ApiError)
-
-	// GetVotePostCount 用于查询帖子的投票数量
-	GetVotePostCount(ctx context.Context, postID int64) (*DTO.PostVoteCounts, *apiError.ApiError)
-
-	// GetBatchPostVoteCount 该函数用于批量查询帖子的投票数量
-	GetBatchPostVoteCount(ctx context.Context, postIDs []int64) ([]DTO.PostVoteCounts, *apiError.ApiError)
-
-	// CheckUserPostVoted 批量查询用户是否投票过
-	CheckUserPostVoted(ctx context.Context, postIDs []int64, userID int64) ([]DTO.UserVotePostRelationsDTO, *apiError.ApiError)
-
-	// GetPostVoteDetail 获取帖子的投票详情
-	GetPostVoteDetail(ctx context.Context, postID int64, pageNum, pageSize int) ([]DTO.UserVotePostDetailDTO, *apiError.ApiError)
-}
-
-type VoteService struct {
-	dao.PostVoteDaoInterface
-	cache.VoteCacheInterface
-	kafka.KafkaInterface
-}
-
-func (v *VoteService) VotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError {
-	isVoted, err := v.PostVoteDaoInterface.CheckUserVotedPost(ctx, postID, userID)
+func VotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError {
+	isVoted, err := dao.CheckUserVotedPost(ctx, postID, userID)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -60,7 +27,7 @@ func (v *VoteService) VotePost(ctx context.Context, postID int64, userID int64) 
 		}
 	}
 
-	err = v.PostVoteDaoInterface.AddPostVote(ctx, postID, userID)
+	err = dao.AddPostVote(ctx, postID, userID)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -69,7 +36,7 @@ func (v *VoteService) VotePost(ctx context.Context, postID int64, userID int64) 
 	}
 
 	go func() {
-		err := v.KafkaInterface.AddContentVote(context.Background(), postID)
+		err := kafka.SendLikeMessage(context.Background(), &kafka.Vote{PostID: strconv.FormatInt(postID, 10), UserID: strconv.FormatInt(userID, 10), Vote: 1})
 		if err != nil {
 			zap.L().Error("Failed to produce message", zap.Error(err))
 		}
@@ -80,8 +47,8 @@ func (v *VoteService) VotePost(ctx context.Context, postID int64, userID int64) 
 }
 
 // RevokeVotePost 取消投票
-func (v *VoteService) RevokeVotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError {
-	isVoted, err := v.PostVoteDaoInterface.CheckUserVotedPost(ctx, postID, userID)
+func RevokeVotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError {
+	isVoted, err := dao.CheckUserVotedPost(ctx, postID, userID)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -95,7 +62,7 @@ func (v *VoteService) RevokeVotePost(ctx context.Context, postID int64, userID i
 		}
 	}
 
-	err = v.PostVoteDaoInterface.RevokePostVote(ctx, postID, userID)
+	err = dao.RevokePostVote(ctx, postID, userID)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -104,17 +71,18 @@ func (v *VoteService) RevokeVotePost(ctx context.Context, postID int64, userID i
 	}
 
 	go func() {
-		err := v.KafkaInterface.SubContentVote(context.Background(), postID)
+		err := kafka.SendLikeMessage(context.Background(), &kafka.Vote{PostID: strconv.FormatInt(postID, 10), UserID: strconv.FormatInt(userID, 10), Vote: -1})
 		if err != nil {
 			zap.L().Error("Failed to produce message", zap.Error(err))
 		}
+		zap.L().Info("取消投票成功")
 	}()
 
 	return nil
 }
 
-func (v *VoteService) MyVotePostList(ctx context.Context, userID int64, pageNum, pageSize int) ([]int64, *apiError.ApiError) {
-	voteRecord, err := v.PostVoteDaoInterface.GetUserVoteList(ctx, userID, pageNum, pageSize)
+func MyVotePostList(ctx context.Context, userID int64, pageNum, pageSize int) ([]int64, *apiError.ApiError) {
+	voteRecord, err := dao.GetUserVoteList(ctx, userID, pageNum, pageSize)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -124,8 +92,8 @@ func (v *VoteService) MyVotePostList(ctx context.Context, userID int64, pageNum,
 	return voteRecord, nil
 }
 
-func (v *VoteService) GetVotePostCount(ctx context.Context, postID int64) (*DTO.PostVoteCounts, *apiError.ApiError) {
-	up, err := v.PostVoteDaoInterface.GetPostVoteCount(ctx, postID)
+func GetVotePostCount(ctx context.Context, postID int64) (*DTO.PostVoteCounts, *apiError.ApiError) {
+	up, err := dao.GetPostVoteCount(ctx, postID)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -135,8 +103,8 @@ func (v *VoteService) GetVotePostCount(ctx context.Context, postID int64) (*DTO.
 	return up, nil
 }
 
-func (v *VoteService) GetBatchPostVoteCount(ctx context.Context, postIDs []int64) ([]DTO.PostVoteCounts, *apiError.ApiError) {
-	resp, err := v.PostVoteDaoInterface.GetBatchPostVoteCount(ctx, postIDs)
+func GetBatchPostVoteCount(ctx context.Context, postIDs []int64) ([]DTO.PostVoteCounts, *apiError.ApiError) {
+	resp, err := dao.GetBatchPostVoteCount(ctx, postIDs)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -147,8 +115,8 @@ func (v *VoteService) GetBatchPostVoteCount(ctx context.Context, postIDs []int64
 }
 
 // CheckUserPostVoted 批量查询用户是否投票过
-func (v *VoteService) CheckUserPostVoted(ctx context.Context, postIDs []int64, userID int64) ([]DTO.UserVotePostRelationsDTO, *apiError.ApiError) {
-	votes, err := v.PostVoteDaoInterface.CheckUserVoted(ctx, postIDs, userID)
+func CheckUserPostVoted(ctx context.Context, postIDs []int64, userID int64) ([]DTO.UserVotePostRelationsDTO, *apiError.ApiError) {
+	votes, err := dao.CheckUserVoted(ctx, postIDs, userID)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -158,8 +126,8 @@ func (v *VoteService) CheckUserPostVoted(ctx context.Context, postIDs []int64, u
 	return votes, nil
 }
 
-func (v *VoteService) GetPostVoteDetail(ctx context.Context, postID int64, pageNum, pageSize int) ([]DTO.UserVotePostDetailDTO, *apiError.ApiError) {
-	voteDetails, err := v.PostVoteDaoInterface.GetPostVoteDetail(ctx, postID, pageNum, pageSize)
+func GetPostVoteDetail(ctx context.Context, postID int64, pageNum, pageSize int) ([]DTO.UserVotePostDetailDTO, *apiError.ApiError) {
+	voteDetails, err := dao.GetPostVoteDetail(ctx, postID, pageNum, pageSize)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -168,16 +136,3 @@ func (v *VoteService) GetPostVoteDetail(ctx context.Context, postID int64, pageN
 	}
 	return voteDetails, nil
 }
-
-func NewVoteService(voteDaoInterface dao.PostVoteDaoInterface, voteCacheInterface cache.VoteCacheInterface, kafkaInterface kafka.KafkaInterface) VotePostServiceInterface {
-	return &VoteService{
-		voteDaoInterface,
-		voteCacheInterface,
-		kafkaInterface,
-	}
-}
-
-const (
-	MaxRetries   = 3               // 最大重试次数
-	InitialDelay = 2 * time.Second // 初始重试间隔
-)

@@ -9,16 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type VoteHandler struct {
-	service.VotePostServiceInterface
-}
-
-func NewVoteHandle(service service.VotePostServiceInterface) *VoteHandler {
-	return &VoteHandler{
-		VotePostServiceInterface: service,
-	}
-}
-
 // VotePostHandler 投票
 // @Summary 投票
 // @Description 投票
@@ -29,13 +19,13 @@ func NewVoteHandle(service service.VotePostServiceInterface) *VoteHandler {
 // @Param post body DTO.VotePostDTO true "投票信息"
 // @Success 200 {object} Response
 // @Router /vote/post [post]
-func (vh *VoteHandler) VotePostHandler(c *gin.Context) {
+func VotePostHandler(c *gin.Context) {
 	var vote DTO.VotePostDTO
 	if err := c.ShouldBindJSON(&vote); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	apiError := vh.VotePostServiceInterface.VotePost(c.Request.Context(), vote.PostID, vote.UserID)
+	apiError := service.VotePost(c.Request.Context(), vote.PostID, vote.UserID)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -53,13 +43,13 @@ func (vh *VoteHandler) VotePostHandler(c *gin.Context) {
 // @Param post body DTO.VotePostDTO true "投票信息"
 // @Success 200 {object} Response
 // @Router /vote/post [delete]
-func (vh *VoteHandler) RevokeVoteHandler(c *gin.Context) {
+func RevokeVoteHandler(c *gin.Context) {
 	var vote DTO.VotePostDTO
 	if err := c.ShouldBindJSON(&vote); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	apiError := vh.VotePostServiceInterface.RevokeVotePost(c.Request.Context(), vote.PostID, vote.UserID)
+	apiError := service.RevokeVotePost(c.Request.Context(), vote.PostID, vote.UserID)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -78,7 +68,7 @@ func (vh *VoteHandler) RevokeVoteHandler(c *gin.Context) {
 // @Param page_size query int false "每页数量"
 // @Success 200 {object} Response
 // @Router /vote/post/list [get]
-func (vh *VoteHandler) MyVoteListHandler(c *gin.Context) {
+func MyVoteListHandler(c *gin.Context) {
 	userIDInt, err := strconv.Atoi(c.Query("user_id"))
 	if err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
@@ -92,7 +82,7 @@ func (vh *VoteHandler) MyVoteListHandler(c *gin.Context) {
 	}
 	pageNum, pageSize := getPageInfo(c)
 
-	voteList, apiError := vh.VotePostServiceInterface.MyVotePostList(c.Request.Context(), userID, pageNum, pageSize)
+	voteList, apiError := service.MyVotePostList(c.Request.Context(), userID, pageNum, pageSize)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -111,14 +101,14 @@ func (vh *VoteHandler) MyVoteListHandler(c *gin.Context) {
 // @Param vote_for query int true "投票类型"
 // @Success 200 {object} Response
 // @Router /vote/post/{ID} [get]
-func (vh *VoteHandler) GetVoteCountHandler(c *gin.Context) {
+func GetVoteCountHandler(c *gin.Context) {
 	postID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
 
-	upCount, apiError := vh.VotePostServiceInterface.GetVotePostCount(c.Request.Context(), int64(postID))
+	upCount, apiError := service.GetVotePostCount(c.Request.Context(), int64(postID))
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -138,7 +128,7 @@ func (vh *VoteHandler) GetVoteCountHandler(c *gin.Context) {
 // @Param vote_for query int true "投票类型"
 // @Success 200 {object} Response
 // @Router /vote/post/list [get]
-func (vh *VoteHandler) CheckUserVotedHandler(c *gin.Context) {
+func CheckUserVotedHandler(c *gin.Context) {
 	var postIds DTO.CheckVoteListDTO
 	if err := c.ShouldBindQuery(&postIds); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
@@ -150,7 +140,7 @@ func (vh *VoteHandler) CheckUserVotedHandler(c *gin.Context) {
 		return
 	}
 
-	voteList, apiError := vh.VotePostServiceInterface.CheckUserPostVoted(c.Request.Context(), postIds.IDs, postIds.UserID)
+	voteList, apiError := service.CheckUserPostVoted(c.Request.Context(), postIds.IDs, postIds.UserID)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -171,7 +161,7 @@ func (vh *VoteHandler) CheckUserVotedHandler(c *gin.Context) {
 // @Param page_size query int false "每页数量"
 // @Success 200 {object} Response
 // @Router /vote/post/detail [get]
-func (vh *VoteHandler) GetPostVoteDetailHandler(c *gin.Context) {
+func GetPostVoteDetailHandler(c *gin.Context) {
 	type PostID struct {
 		ID int64 `form:"id" binding:"required"`
 	}
@@ -182,7 +172,7 @@ func (vh *VoteHandler) GetPostVoteDetailHandler(c *gin.Context) {
 		return
 	}
 
-	voteList, apiError := vh.VotePostServiceInterface.GetPostVoteDetail(c.Request.Context(), postIds.ID, pageNum, pageSize)
+	voteList, apiError := service.GetPostVoteDetail(c.Request.Context(), postIds.ID, pageNum, pageSize)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -192,7 +182,7 @@ func (vh *VoteHandler) GetPostVoteDetailHandler(c *gin.Context) {
 	return
 }
 
-func (vh *VoteHandler) GetBatchPostVoteCount(c *gin.Context) {
+func GetBatchPostVoteCount(c *gin.Context) {
 	type ids struct {
 		PostID []int64 `json:"post_id"`
 	}
@@ -201,7 +191,7 @@ func (vh *VoteHandler) GetBatchPostVoteCount(c *gin.Context) {
 		ResponseErrorWithCode(c, code.InvalidParam)
 		return
 	}
-	resp, apiError := vh.VotePostServiceInterface.GetBatchPostVoteCount(c.Request.Context(), postIDs.PostID)
+	resp, apiError := service.GetBatchPostVoteCount(c.Request.Context(), postIDs.PostID)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return

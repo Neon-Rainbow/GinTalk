@@ -29,6 +29,7 @@ func (p *PostDetail) ConvertToSummary() *PostSummary {
 		Username:      p.Username,
 		CommunityID:   p.CommunityID,
 		CommunityName: p.CommunityName,
+		Summary:       p.GenerateSummary(),
 	}
 }
 

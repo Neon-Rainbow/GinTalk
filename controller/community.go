@@ -9,20 +9,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// CommunityHandler 社区控制器
-type CommunityHandler struct {
-	CommunityService service.CommunityServiceInterface
-}
-
-// NewCommunityController 创建 CommunityHandler 实例
-func NewCommunityController(service service.CommunityServiceInterface) *CommunityHandler {
-	return &CommunityHandler{
-		CommunityService: service,
-	}
-}
-
-func (cc *CommunityHandler) CommunityHandler(c *gin.Context) {
-	list, apiError := cc.CommunityService.GetCommunityList(c.Request.Context())
+func CommunityHandler(c *gin.Context) {
+	list, apiError := service.GetCommunityList(c.Request.Context())
 	if apiError != nil {
 		zap.L().Error("service.GetCommunityList(c.Request.Context()) 错误",
 			zap.Error(apiError),
@@ -33,7 +21,7 @@ func (cc *CommunityHandler) CommunityHandler(c *gin.Context) {
 	ResponseSuccess(c, list)
 }
 
-func (cc *CommunityHandler) CommunityDetailHandler(c *gin.Context) {
+func CommunityDetailHandler(c *gin.Context) {
 	_s := c.Param("id")
 
 	//string 转为 int32
@@ -46,7 +34,7 @@ func (cc *CommunityHandler) CommunityDetailHandler(c *gin.Context) {
 
 	communityID := int32(_t)
 
-	community, apiError := cc.CommunityService.GetCommunityDetail(c.Request.Context(), communityID)
+	community, apiError := service.GetCommunityDetail(c.Request.Context(), communityID)
 	if apiError != nil {
 		zap.L().Error("service.GetCommunityDetail(c.Request.Context(), communityID) 错误",
 			zap.Error(apiError),

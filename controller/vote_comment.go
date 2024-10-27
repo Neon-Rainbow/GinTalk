@@ -8,16 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type VoteCommentController struct {
-	service.VoteCommentServiceInterface
-}
-
-func NewVoteCommentController(service service.VoteCommentServiceInterface) *VoteCommentController {
-	return &VoteCommentController{
-		VoteCommentServiceInterface: service,
-	}
-}
-
 // VoteCommentController 投票评论
 // @Summary 投票评论
 // @Tags 评论
@@ -26,13 +16,13 @@ func NewVoteCommentController(service service.VoteCommentServiceInterface) *Vote
 // @Param voteComment body DTO.VoteComment true "voteComment"
 // @Success 200 {object} Response
 // @Router /vote/comment [post]
-func (vcc *VoteCommentController) VoteCommentController(c *gin.Context) {
+func VoteCommentController(c *gin.Context) {
 	var voteComment DTO.VoteComment
 	if err := c.ShouldBindJSON(&voteComment); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	apiError := vcc.VoteCommentServiceInterface.VoteComment(voteComment.UserID, voteComment.CommentID)
+	apiError := service.VoteComment(voteComment.UserID, voteComment.CommentID)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -48,13 +38,13 @@ func (vcc *VoteCommentController) VoteCommentController(c *gin.Context) {
 // @Param voteComment body DTO.VoteComment true "voteComment"
 // @Success 200 {object} Response
 // @Router /vote/comment [delete]
-func (vcc *VoteCommentController) RemoveVoteCommentController(c *gin.Context) {
+func RemoveVoteCommentController(c *gin.Context) {
 	var voteComment DTO.VoteComment
 	if err := c.ShouldBindJSON(&voteComment); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	apiError := vcc.VoteCommentServiceInterface.RemoveVoteComment(voteComment.UserID, voteComment.CommentID)
+	apiError := service.RemoveVoteComment(voteComment.UserID, voteComment.CommentID)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -70,13 +60,13 @@ func (vcc *VoteCommentController) RemoveVoteCommentController(c *gin.Context) {
 // @Param voteComment body DTO.VoteComment true "voteComment"
 // @Success 200 {object} Response
 // @Router /vote/comment [get]
-func (vcc *VoteCommentController) GetVoteCommentController(c *gin.Context) {
+func GetVoteCommentController(c *gin.Context) {
 	var voteComment DTO.VoteComment
 	if err := c.ShouldBindJSON(&voteComment); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	count, apiError := vcc.VoteCommentServiceInterface.GetVoteComment(voteComment.UserID, voteComment.CommentID)
+	count, apiError := service.GetVoteComment(voteComment.UserID, voteComment.CommentID)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
@@ -92,7 +82,7 @@ func (vcc *VoteCommentController) GetVoteCommentController(c *gin.Context) {
 // @Param voteComment body VoteCommentList true "voteComment"
 // @Success 200 {object} Response
 // @Router /vote/comment/list [get]
-func (vcc *VoteCommentController) GetVoteCommentListController(c *gin.Context) {
+func GetVoteCommentListController(c *gin.Context) {
 	type VoteCommentList struct {
 		UserID    int64   `json:"user_id" form:"user_id"`
 		CommentID []int64 `json:"comment_id" form:"comment_id"`
@@ -102,7 +92,7 @@ func (vcc *VoteCommentController) GetVoteCommentListController(c *gin.Context) {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	result, apiError := vcc.VoteCommentServiceInterface.GetVoteCommentList(voteComment.UserID, voteComment.CommentID)
+	result, apiError := service.GetVoteCommentList(voteComment.UserID, voteComment.CommentID)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return

@@ -10,17 +10,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type AuthHandler struct {
-	service.AuthServiceInterface
-}
-
-// NewAuthHandler 创建 AuthHandler 实例
-func NewAuthHandler(service service.AuthServiceInterface) *AuthHandler {
-	return &AuthHandler{
-		AuthServiceInterface: service,
-	}
-}
-
 // LoginHandler 登录接口
 // @Summary 登录接口
 // @Description 登录接口
@@ -31,7 +20,7 @@ func NewAuthHandler(service service.AuthServiceInterface) *AuthHandler {
 // @Param password body string true "密码"
 // @Success 200 {object} Response
 // @Router /api/v1/login [post]
-func (ah *AuthHandler) LoginHandler(c *gin.Context) {
+func LoginHandler(c *gin.Context) {
 	var loginDTO DTO.LoginRequestDTO
 	if err := c.ShouldBindJSON(&loginDTO); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
@@ -41,7 +30,7 @@ func (ah *AuthHandler) LoginHandler(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	resp, apiError := ah.AuthServiceInterface.LoginService(ctx, &loginDTO)
+	resp, apiError := service.LoginService(ctx, &loginDTO)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		zap.L().Error("AuthServiceInterface.LoginService() 失败", zap.Error(apiError))
@@ -63,7 +52,7 @@ func (ah *AuthHandler) LoginHandler(c *gin.Context) {
 // @Param gender body string true "性别"
 // @Success 200 {object} Response
 // @Router /api/v1/signup [post]
-func (ah *AuthHandler) SignUpHandler(c *gin.Context) {
+func SignUpHandler(c *gin.Context) {
 	var SignupDTO DTO.SignUpRequestDTO
 	if err := c.ShouldBindJSON(&SignupDTO); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
@@ -72,7 +61,7 @@ func (ah *AuthHandler) SignUpHandler(c *gin.Context) {
 	}
 	ctx := c.Request.Context()
 
-	apiError := ah.AuthServiceInterface.SignupService(ctx, &SignupDTO)
+	apiError := service.SignupService(ctx, &SignupDTO)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		zap.L().Error("AuthServiceInterface.SignupService() 失败", zap.Error(apiError))
@@ -90,17 +79,17 @@ func (ah *AuthHandler) SignUpHandler(c *gin.Context) {
 // @Param refresh_token query string true
 // @Success 200 {object} Response
 // @Router /api/v1/refresh_token [get]
-func (ah *AuthHandler) RefreshHandler(c *gin.Context) {
+func RefreshHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	oldRefreshToken := c.Query("refresh_token")
-	accessToken, refreshToken, apiError := ah.AuthServiceInterface.RefreshTokenService(ctx, oldRefreshToken)
+	accessToken, refreshToken, apiError := service.RefreshTokenService(ctx, oldRefreshToken)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		zap.L().Error("AuthServiceInterface.RefreshTokenService() 失败", zap.Error(apiError))
 		return
 	}
 	go func() {
-		err := ah.AuthServiceInterface.LogoutService(context.Background(), oldRefreshToken)
+		err := service.LogoutService(context.Background(), oldRefreshToken)
 		if err != nil {
 			zap.L().Error("refresh token logout failed", zap.Error(err))
 		}
@@ -122,11 +111,11 @@ func (ah *AuthHandler) RefreshHandler(c *gin.Context) {
 // @Param refresh_token query string true
 // @Success 200 {object} Response
 // @Router /api/v1/logout [post]
-func (ah *AuthHandler) LogoutHandler(c *gin.Context) {
+func LogoutHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	refreshToken := c.Query("refresh_token")
 	accessToken := c.Query("access_token")
-	apiError := ah.AuthServiceInterface.LogoutService(ctx, accessToken, refreshToken)
+	apiError := service.LogoutService(ctx, accessToken, refreshToken)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return

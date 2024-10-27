@@ -2,38 +2,17 @@ package dao
 
 import (
 	"GinTalk/DTO"
+	"GinTalk/dao/MySQL"
 	"context"
 	"fmt"
-	"gorm.io/gorm"
 	"time"
 )
 
-var _ PostDaoInterface = (*PostDao)(nil)
-
-type PostDaoInterface interface {
-	CreatePost(ctx context.Context, post *DTO.PostDetail, summary string) error
-	GetPostList(ctx context.Context, pageNum int, pageSize int) ([]DTO.PostSummary, error)
-	GetPostListBatch(ctx context.Context, postIDs []int64) ([]DTO.PostSummary, error)
-	GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, error)
-
-	// UpdatePost 更新帖子
-	// 参数post中只需要有PostID, Title, Summary, Content四个字段
-	UpdatePost(ctx context.Context, post *DTO.PostDetail, summary string) error
-
-	// GetPostListByCommunityID 根据社区ID获取帖子列表
-	GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, error)
-	DeletePost(ctx context.Context, postID int64) error
-}
-
-type PostDao struct {
-	*gorm.DB
-}
-
-func NewPostDao(db *gorm.DB) PostDaoInterface {
-	return &PostDao{DB: db}
-}
-
-func (pd *PostDao) CreatePost(ctx context.Context, post *DTO.PostDetail, summary string) error {
+// CreatePost 创建帖子
+// 1. 创建帖子
+// 2. 创建帖子投票记录
+// 3. 创建帖子内容
+func CreatePost(ctx context.Context, post *DTO.PostDetail) error {
 	if post.PostID == 0 {
 		return fmt.Errorf("postID 不能为空")
 	}
@@ -51,8 +30,8 @@ func (pd *PostDao) CreatePost(ctx context.Context, post *DTO.PostDetail, summary
 	sqlStr2 := `INSERT INTO content_votes (post_id) VALUES (?)`
 	sqlStr3 := `INSERT INTO post_content (post_id, content) VALUES (?, ?)`
 
-	tx := pd.WithContext(ctx).Begin()
-	err := tx.WithContext(ctx).Exec(sqlStr1, post.PostID, post.Title, summary, post.AuthorId, post.CommunityID).Error
+	tx := MySQL.GetDB().WithContext(ctx).Begin()
+	err := tx.WithContext(ctx).Exec(sqlStr1, post.PostID, post.Title, post.GenerateSummary(), post.AuthorId, post.CommunityID).Error
 	if err != nil {
 		tx.Rollback()
 	}
@@ -71,7 +50,7 @@ func (pd *PostDao) CreatePost(ctx context.Context, post *DTO.PostDetail, summary
 	return nil
 }
 
-func (pd *PostDao) GetPostList(ctx context.Context, pageNum int, pageSize int) ([]DTO.PostSummary, error) {
+func GetPostList(ctx context.Context, pageNum int, pageSize int) ([]DTO.PostSummary, error) {
 	sqlStr := `SELECT 
                     post.post_id,
                     post.title,
@@ -92,14 +71,14 @@ func (pd *PostDao) GetPostList(ctx context.Context, pageNum int, pageSize int) (
                 LIMIT ? OFFSET ?`
 
 	var posts []DTO.PostSummary
-	err := pd.WithContext(ctx).Raw(sqlStr, pageSize, (pageNum-1)*pageSize).Scan(&posts).Error
+	err := MySQL.GetDB().WithContext(ctx).Raw(sqlStr, pageSize, (pageNum-1)*pageSize).Scan(&posts).Error
 	if err != nil {
 		return nil, err
 	}
 	return posts, nil
 }
 
-func (pd *PostDao) GetPostListBatch(ctx context.Context, postIDs []int64) ([]DTO.PostSummary, error) {
+func GetPostListBatch(ctx context.Context, postIDs []int64) ([]DTO.PostSummary, error) {
 	sqlStr := `SELECT 
 					post.post_id,
 					post.title,
@@ -120,14 +99,14 @@ func (pd *PostDao) GetPostListBatch(ctx context.Context, postIDs []int64) ([]DTO
 					AND post.delete_time = 0`
 
 	var posts []DTO.PostSummary
-	err := pd.WithContext(ctx).Raw(sqlStr, postIDs).Scan(&posts).Error
+	err := MySQL.GetDB().WithContext(ctx).Raw(sqlStr, postIDs).Scan(&posts).Error
 	if err != nil {
 		return nil, err
 	}
 	return posts, nil
 }
 
-func (pd *PostDao) GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, error) {
+func GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, error) {
 	sqlStr := `SELECT 
 					post.post_id,
 					post.title,
@@ -150,14 +129,14 @@ func (pd *PostDao) GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDe
 					AND post.delete_time = 0`
 
 	var post DTO.PostDetail
-	err := pd.WithContext(ctx).Raw(sqlStr, postID).Scan(&post).Error
+	err := MySQL.GetDB().WithContext(ctx).Raw(sqlStr, postID).Scan(&post).Error
 	if err != nil {
 		return nil, err
 	}
 	return &post, nil
 }
 
-func (pd *PostDao) UpdatePost(ctx context.Context, post *DTO.PostDetail, summary string) error {
+func UpdatePost(ctx context.Context, post *DTO.PostDetail, summary string) error {
 	if post.PostID == 0 {
 		return fmt.Errorf("postID 不能为空")
 	}
@@ -167,13 +146,13 @@ func (pd *PostDao) UpdatePost(ctx context.Context, post *DTO.PostDetail, summary
 	if post.Content == "" {
 		return fmt.Errorf("内容不能为空")
 	}
-	tx := pd.WithContext(ctx).Begin()
-	sqlStr := `UPDATE post SET title = ?, summary = ? WHERE post_id = ?`
+	tx := MySQL.GetDB().WithContext(ctx).Begin()
+	sqlStr := `UMySQL.GetDB()ATE post SET title = ?, summary = ? WHERE post_id = ?`
 	err := tx.Exec(sqlStr, post.Title, summary, post.PostID).Error
 	if err != nil {
 		tx.Rollback()
 	}
-	sqlStr = `UPDATE post_content SET content = ? WHERE post_id = ?`
+	sqlStr = `UMySQL.GetDB()ATE post_content SET content = ? WHERE post_id = ?`
 	err = tx.Exec(sqlStr, post.Content, post.PostID).Error
 	if err != nil {
 		tx.Rollback()
@@ -181,7 +160,7 @@ func (pd *PostDao) UpdatePost(ctx context.Context, post *DTO.PostDetail, summary
 	return tx.Commit().Error
 }
 
-func (pd *PostDao) GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, error) {
+func GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, error) {
 	sqlStr := `SELECT 
 					post.post_id,
 					post.title,
@@ -203,14 +182,14 @@ func (pd *PostDao) GetPostListByCommunityID(ctx context.Context, communityID int
 				LIMIT ? OFFSET ?`
 
 	var posts []DTO.PostSummary
-	err := pd.WithContext(ctx).Raw(sqlStr, communityID, pageSize, (pageNum-1)*pageSize).Scan(&posts).Error
+	err := MySQL.GetDB().WithContext(ctx).Raw(sqlStr, communityID, pageSize, (pageNum-1)*pageSize).Scan(&posts).Error
 	if err != nil {
 		return nil, err
 	}
 	return posts, nil
 }
 
-func (pd *PostDao) DeletePost(ctx context.Context, postID int64) error {
+func DeletePost(ctx context.Context, postID int64) error {
 	sqlStr := `UPDATE post SET delete_time = ? WHERE post_id = ?`
-	return pd.WithContext(ctx).Exec(sqlStr, time.Now().Unix(), postID).Error
+	return MySQL.GetDB().WithContext(ctx).Exec(sqlStr, time.Now().Unix(), postID).Error
 }

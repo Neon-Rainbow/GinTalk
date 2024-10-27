@@ -10,16 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type PostHandler struct {
-	service.PostServiceInterface
-}
-
-func NewPostHandler(service service.PostServiceInterface) *PostHandler {
-	return &PostHandler{
-		PostServiceInterface: service,
-	}
-}
-
 // CreatePostHandler 创建帖子
 // @Summary 创建帖子
 // @Description 创建帖子
@@ -30,7 +20,7 @@ func NewPostHandler(service service.PostServiceInterface) *PostHandler {
 // @Param post body DTO.PostDetail true "帖子信息"
 // @Success 200 {object} Response
 // @Router /api/v1/post [post]
-func (ph *PostHandler) CreatePostHandler(c *gin.Context) {
+func CreatePostHandler(c *gin.Context) {
 	var post DTO.PostDetail
 	if err := c.ShouldBindJSON(&post); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
@@ -43,10 +33,10 @@ func (ph *PostHandler) CreatePostHandler(c *gin.Context) {
 		return
 	}
 
-	apiError := ph.PostServiceInterface.CreatePost(c.Request.Context(), &post)
+	apiError := service.CreatePost(c.Request.Context(), &post)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
-		zap.L().Error("PostServiceInterface.CreatePost() 失败", zap.Error(apiError))
+		zap.L().Error("kafka.SendPostMessage() 失败", zap.Error(apiError))
 		return
 	}
 	ResponseSuccess(c, nil)
@@ -63,7 +53,7 @@ func (ph *PostHandler) CreatePostHandler(c *gin.Context) {
 // @Param page_size query int false "每页数量"
 // @Success 200 {object} Response
 // @Router /api/v1/post [get]
-func (ph *PostHandler) GetPostListHandler(c *gin.Context) {
+func GetPostListHandler(c *gin.Context) {
 	pageNum, pageSize := getPageInfo(c)
 	order, err := strconv.Atoi(c.Query("order"))
 	if err != nil {
@@ -71,7 +61,7 @@ func (ph *PostHandler) GetPostListHandler(c *gin.Context) {
 		zap.L().Info("GetPostListHandler strconv.Atoi() 失败", zap.Error(err))
 		return
 	}
-	postList, apiError := ph.PostServiceInterface.GetPostList(c.Request.Context(), pageNum, pageSize, order)
+	postList, apiError := service.GetPostList(c.Request.Context(), pageNum, pageSize, order)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		zap.L().Error("PostServiceInterface.GetPostList() 失败", zap.Error(apiError))
@@ -93,7 +83,7 @@ func (ph *PostHandler) GetPostListHandler(c *gin.Context) {
 // @Param page_size query int false "每页数量"
 // @Success 200 {object} Response
 // @Router /api/v1/post/community [get]
-func (ph *PostHandler) GetPostListByCommunityID(c *gin.Context) {
+func GetPostListByCommunityID(c *gin.Context) {
 	pageNum, pageSize := getPageInfo(c)
 	communityID, err := strconv.ParseInt(c.Query("community_id"), 10, 64)
 	if err != nil {
@@ -101,7 +91,7 @@ func (ph *PostHandler) GetPostListByCommunityID(c *gin.Context) {
 		zap.L().Info("GetPostListByCommunityID strconv.ParseInt() 失败", zap.Error(err))
 		return
 	}
-	postList, apiError := ph.PostServiceInterface.GetPostListByCommunityID(c.Request.Context(), communityID, pageNum, pageSize)
+	postList, apiError := service.GetPostListByCommunityID(c.Request.Context(), communityID, pageNum, pageSize)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		zap.L().Error("PostServiceInterface.GetPostListByCommunityID() 失败", zap.Error(apiError))
@@ -120,7 +110,7 @@ func (ph *PostHandler) GetPostListByCommunityID(c *gin.Context) {
 // @Param ID path int true "帖子ID"
 // @Success 200 {object} Response
 // @Router /api/v1/post/{ID} [get]
-func (ph *PostHandler) GetPostDetailHandler(c *gin.Context) {
+func GetPostDetailHandler(c *gin.Context) {
 	postID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
@@ -128,7 +118,7 @@ func (ph *PostHandler) GetPostDetailHandler(c *gin.Context) {
 		return
 	}
 
-	post, apiError := ph.PostServiceInterface.GetPostDetail(c.Request.Context(), postID)
+	post, apiError := service.GetPostDetail(c.Request.Context(), postID)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		zap.L().Error("PostServiceInterface.GetPostDetail() 失败", zap.Error(apiError))
@@ -147,7 +137,7 @@ func (ph *PostHandler) GetPostDetailHandler(c *gin.Context) {
 // @Param post body DTO.PostDetail true "帖子信息"
 // @Success 200 {object} Response
 // @Router /api/v1/post [put]
-func (ph *PostHandler) UpdatePostHandler(c *gin.Context) {
+func UpdatePostHandler(c *gin.Context) {
 	var post DTO.PostDetail
 	if err := c.ShouldBindJSON(&post); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
@@ -159,7 +149,7 @@ func (ph *PostHandler) UpdatePostHandler(c *gin.Context) {
 		zap.L().Info("UpdatePostHandler.isUserIDMatch() 失败")
 		return
 	}
-	apiError := ph.UpdatePost(c.Request.Context(), &post)
+	apiError := service.UpdatePost(c.Request.Context(), &post)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		zap.L().Error("PostServiceInterface.UpdatePost() 失败", zap.Error(apiError))
@@ -168,7 +158,7 @@ func (ph *PostHandler) UpdatePostHandler(c *gin.Context) {
 	ResponseSuccess(c, nil)
 }
 
-func (ph *PostHandler) DeletePostHandler(c *gin.Context) {
+func DeletePostHandler(c *gin.Context) {
 	var p DTO.VotePostDTO
 	if err := c.ShouldBindBodyWithJSON(&p); err != nil {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
@@ -181,7 +171,7 @@ func (ph *PostHandler) DeletePostHandler(c *gin.Context) {
 		return
 	}
 
-	apiError := ph.DeletePost(c.Request.Context(), p.PostID)
+	apiError := service.DeletePost(c.Request.Context(), p.PostID)
 	if apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		zap.L().Error("PostServiceInterface.DeletePost() 失败", zap.Error(apiError))

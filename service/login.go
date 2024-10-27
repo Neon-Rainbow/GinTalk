@@ -15,29 +15,9 @@ import (
 	"time"
 )
 
-var _ AuthServiceInterface = (*AuthService)(nil)
-
-type AuthServiceInterface interface {
-	LoginService(ctx context.Context, dto *DTO.LoginRequestDTO) (*DTO.LoginResponseDTO, *apiError.ApiError)
-	LogoutService(ctx context.Context, token ...string) *apiError.ApiError
-	SignupService(ctx context.Context, dto *DTO.SignUpRequestDTO) *apiError.ApiError
-	RefreshTokenService(ctx context.Context, token string) (string, string, *apiError.ApiError)
-}
-
-type AuthService struct {
-	dao.UserDaoInterface
-	cache.AuthCacheInterface
-}
-
-func NewAuthService(userDaoInterface dao.UserDaoInterface, cache cache.AuthCacheInterface) AuthServiceInterface {
-	return &AuthService{
-		userDaoInterface,
-		cache,
-	}
-}
-
-func (as *AuthService) LoginService(ctx context.Context, dto *DTO.LoginRequestDTO) (*DTO.LoginResponseDTO, *apiError.ApiError) {
-	user, err := as.UserDaoInterface.FindUserByUsername(ctx, dto.Username)
+// LoginService 登录服务
+func LoginService(ctx context.Context, dto *DTO.LoginRequestDTO) (*DTO.LoginResponseDTO, *apiError.ApiError) {
+	user, err := dao.FindUserByUsername(ctx, dto.Username)
 	if err != nil || user == nil {
 		return nil, &apiError.ApiError{
 			Code: code.UserNotExist,
@@ -66,7 +46,8 @@ func (as *AuthService) LoginService(ctx context.Context, dto *DTO.LoginRequestDT
 	}, nil
 }
 
-func (as *AuthService) SignupService(ctx context.Context, dto *DTO.SignUpRequestDTO) *apiError.ApiError {
+// SignupService 注册服务
+func SignupService(ctx context.Context, dto *DTO.SignUpRequestDTO) *apiError.ApiError {
 	dto.Password = pkg.EncryptPassword(dto.Password)
 	var user model.User
 
@@ -86,7 +67,7 @@ func (as *AuthService) SignupService(ctx context.Context, dto *DTO.SignUpRequest
 		}
 	}
 
-	err = as.UserDaoInterface.CreateUser(ctx, &user)
+	err = dao.CreateUser(ctx, &user)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -96,7 +77,8 @@ func (as *AuthService) SignupService(ctx context.Context, dto *DTO.SignUpRequest
 	return nil
 }
 
-func (as *AuthService) RefreshTokenService(ctx context.Context, token string) (string, string, *apiError.ApiError) {
+// RefreshTokenService 刷新token
+func RefreshTokenService(ctx context.Context, token string) (string, string, *apiError.ApiError) {
 	myClaims, err := jwt.ParseToken(token)
 	if err != nil {
 		return "", "", &apiError.ApiError{
@@ -119,7 +101,7 @@ func (as *AuthService) RefreshTokenService(ctx context.Context, token string) (s
 		}
 	}
 
-	err = as.AuthCacheInterface.AddTokenToBlacklist(ctx, token, time.Until(myClaims.ExpiresAt.Time))
+	err = cache.AddTokenToBlacklist(ctx, token, time.Until(myClaims.ExpiresAt.Time))
 
 	if err != nil {
 		return "", "", &apiError.ApiError{
@@ -132,7 +114,7 @@ func (as *AuthService) RefreshTokenService(ctx context.Context, token string) (s
 
 }
 
-func (as *AuthService) LogoutService(ctx context.Context, token ...string) *apiError.ApiError {
+func LogoutService(ctx context.Context, token ...string) *apiError.ApiError {
 	for _, t := range token {
 		myClaims, err := jwt.ParseToken(t)
 		if err != nil {
@@ -142,7 +124,7 @@ func (as *AuthService) LogoutService(ctx context.Context, token ...string) *apiE
 			}
 		}
 
-		err = as.AuthCacheInterface.AddTokenToBlacklist(ctx, t, time.Until(myClaims.ExpiresAt.Time))
+		err = cache.AddTokenToBlacklist(ctx, t, time.Until(myClaims.ExpiresAt.Time))
 		if err != nil {
 			return &apiError.ApiError{
 				Code: code.ServerError,

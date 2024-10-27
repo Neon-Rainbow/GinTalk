@@ -18,33 +18,7 @@ import (
 // DelayDeleteTime 设置延迟双删的时间
 const DelayDeleteTime = 2 * time.Second
 
-var _ PostServiceInterface = (*PostService)(nil)
-
-type PostServiceInterface interface {
-	CreatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError
-	GetPostList(ctx context.Context, pageNum int, pageSize int, order int) ([]DTO.PostSummary, *apiError.ApiError)
-	GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, *apiError.ApiError)
-	UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError
-	GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, *apiError.ApiError)
-	DeletePost(ctx context.Context, postID int64) *apiError.ApiError
-}
-
-type PostService struct {
-	dao.PostDaoInterface
-	cache.PostCacheInterface
-	kafka.KafkaInterface
-}
-
-// NewPostService 使用依赖注入初始化 PostService
-func NewPostService(postDaoInterface dao.PostDaoInterface, cache cache.PostCacheInterface, kafka kafka.KafkaInterface) PostServiceInterface {
-	return &PostService{
-		PostDaoInterface:   postDaoInterface,
-		PostCacheInterface: cache,
-		KafkaInterface:     kafka,
-	}
-}
-
-func (ps *PostService) CreatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError {
+func CreatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError {
 	postID, err := snowflake.GetID()
 	if err != nil {
 		return &apiError.ApiError{
@@ -55,27 +29,9 @@ func (ps *PostService) CreatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 
 	postDTO.PostID = postID
 
-	summary := TruncateByWords(postDTO.Content, MaxSummaryLength)
-
-	err = ps.PostDaoInterface.CreatePost(ctx, postDTO, summary)
-	if err != nil {
-		return &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  fmt.Sprintf("保存帖子失败: %v", err),
-		}
-	}
-
-	postSummary := &DTO.PostSummary{
-		PostID:      postID,
-		CommunityID: postDTO.CommunityID,
-		Title:       postDTO.Title,
-		AuthorId:    postDTO.AuthorId,
-		Summary:     summary,
-	}
-
 	// 将帖子 ID 存入 Redis
 	go func() {
-		err := ps.KafkaInterface.SavePostSummaryToRedis(context.Background(), postSummary)
+		err := kafka.SendPostMessage(context.Background(), postDTO)
 		if err != nil {
 			zap.L().Error("Kafka 生产消息失败", zap.Error(err))
 		}
@@ -84,7 +40,7 @@ func (ps *PostService) CreatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 	return nil
 }
 
-func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize int, order int) ([]DTO.PostSummary, *apiError.ApiError) {
+func GetPostList(ctx context.Context, pageNum int, pageSize int, order int) ([]DTO.PostSummary, *apiError.ApiError) {
 	// pageNum 和 pageSize 不能小于等于 0
 	if pageNum <= 0 {
 		pageNum = 1
@@ -93,7 +49,7 @@ func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize in
 		pageSize = 10
 	}
 
-	postIDs, err := ps.PostCacheInterface.GetPostIDsFromRedis(ctx, order, pageNum, pageSize)
+	postIDs, err := cache.GetPostIDs(ctx, order, pageNum, pageSize)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -102,7 +58,7 @@ func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize in
 	}
 
 	// 首先从 Redis 中获取帖子列表
-	redisList, missingIDs, err := ps.PostCacheInterface.GetPostSummaryFromRedis(ctx, postIDs)
+	redisList, missingIDs, err := cache.GetPostSummary(ctx, postIDs)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -110,7 +66,7 @@ func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize in
 		}
 	}
 
-	list, err := ps.PostDaoInterface.GetPostListBatch(ctx, missingIDs)
+	list, err := dao.GetPostListBatch(ctx, missingIDs)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -121,7 +77,7 @@ func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize in
 	// 将缺失的帖子存入 Redis
 	go func() {
 		for _, post := range list {
-			err := ps.KafkaInterface.SavePostSummaryToRedis(context.Background(), &post)
+			err := cache.SavePost(context.Background(), &post)
 			if err != nil {
 				zap.L().Error("保存帖子到 Redis 失败", zap.Error(err))
 			}
@@ -131,8 +87,8 @@ func (ps *PostService) GetPostList(ctx context.Context, pageNum int, pageSize in
 	return slices.Concat(redisList, list), nil
 }
 
-func (ps *PostService) GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, *apiError.ApiError) {
-	postDetail, err := ps.PostDaoInterface.GetPostDetail(ctx, postID)
+func GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, *apiError.ApiError) {
+	postDetail, err := dao.GetPostDetail(ctx, postID)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -142,11 +98,11 @@ func (ps *PostService) GetPostDetail(ctx context.Context, postID int64) (*DTO.Po
 	return postDetail, nil
 }
 
-func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError {
+func UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError {
 	// 延迟双删, 保证数据一致性
 
 	// 第一次删除 Redis 中数据
-	err := ps.PostCacheInterface.DeleteRedisPostSummary(ctx, postDTO.PostID)
+	err := cache.DeletePostSummary(ctx, postDTO.PostID)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -165,7 +121,7 @@ func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 	summary := TruncateByWords(postDTO.Content, MaxSummaryLength)
 	fmt.Printf("截断后: %s\n", summary)
 
-	err = ps.PostDaoInterface.UpdatePost(ctx, postDTO, summary)
+	err = dao.UpdatePost(ctx, postDTO, summary)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -178,7 +134,7 @@ func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 		ctx, cancel := context.WithTimeout(context.Background(), DelayDeleteTime)
 		defer cancel()
 		time.Sleep(2 * time.Second)
-		err := ps.PostCacheInterface.DeleteRedisPostSummary(ctx, postDTO.PostID)
+		err := cache.DeletePostSummary(ctx, postDTO.PostID)
 		if err != nil {
 			zap.L().Error("删除 Redis 数据失败")
 		}
@@ -187,7 +143,7 @@ func (ps *PostService) UpdatePost(ctx context.Context, postDTO *DTO.PostDetail) 
 	return nil
 }
 
-func (ps *PostService) GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, *apiError.ApiError) {
+func GetPostListByCommunityID(ctx context.Context, communityID int64, pageNum int, pageSize int) ([]DTO.PostSummary, *apiError.ApiError) {
 	// pageNum 和 pageSize 不能小于等于 0
 	if pageNum <= 0 {
 		pageNum = 1
@@ -195,7 +151,7 @@ func (ps *PostService) GetPostListByCommunityID(ctx context.Context, communityID
 	if pageSize <= 0 {
 		pageSize = 10
 	}
-	list, err := ps.PostDaoInterface.GetPostListByCommunityID(ctx, communityID, pageNum, pageSize)
+	list, err := dao.GetPostListByCommunityID(ctx, communityID, pageNum, pageSize)
 	if err != nil {
 		return nil, &apiError.ApiError{
 			Code: code.ServerError,
@@ -205,8 +161,8 @@ func (ps *PostService) GetPostListByCommunityID(ctx context.Context, communityID
 	return list, nil
 }
 
-func (ps *PostService) DeletePost(ctx context.Context, postID int64) *apiError.ApiError {
-	err := ps.PostDaoInterface.DeletePost(ctx, postID)
+func DeletePost(ctx context.Context, postID int64) *apiError.ApiError {
+	err := dao.DeletePost(ctx, postID)
 	if err != nil {
 		return &apiError.ApiError{
 			Code: code.ServerError,
@@ -214,7 +170,7 @@ func (ps *PostService) DeletePost(ctx context.Context, postID int64) *apiError.A
 		}
 	}
 	go func() {
-		err := ps.PostCacheInterface.DeleteRedisPost(context.Background(), postID)
+		err := cache.DeletePost(context.Background(), postID)
 		if err != nil {
 			zap.L().Error("删除 Redis 中的帖子数据失败, ", zap.Error(err))
 		}
