@@ -14,9 +14,12 @@ func CreateUser(ctx context.Context, user *model.User) error {
 func FindUserByUsername(ctx context.Context, username string) (*model.User, error) {
 	var user model.User
 	sqlStr := `SELECT user_id, username, password FROM user WHERE username = ? AND delete_time = 0`
-	err := MySQL.GetDB().WithContext(ctx).Raw(sqlStr, username).Scan(&user).Error
-	if err != nil {
-		return nil, err
+	result := MySQL.GetDB().WithContext(ctx).Raw(sqlStr, username).Scan(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
 	}
 	return &user, nil
 }
