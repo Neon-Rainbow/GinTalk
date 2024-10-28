@@ -6,8 +6,3 @@ type Vote struct {
 	Vote   int    `json:"vote"`
 }
 
-const (
-	TopicPost    = "post"
-	TopicLike    = "like"
-	TopicComment = "comment"
-)

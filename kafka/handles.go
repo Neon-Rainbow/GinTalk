@@ -7,9 +7,10 @@ import (
 	"GinTalk/model"
 	"context"
 	"encoding/json"
+	"strconv"
+
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
-	"strconv"
 )
 
 // handleLikeMessage 处理点赞消息
