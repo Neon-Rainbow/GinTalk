@@ -72,7 +72,7 @@ func SetupRouter() *gin.Engine {
 		v1.GET("/vote/post/:id", controller.GetVoteCountHandler)
 		v1.GET("/vote/post/user", controller.MyVoteListHandler)
 		v1.GET("/vote/post/list", controller.CheckUserVotedHandler)
-		v1.GET("/vote/post/batch", controller.GetBatchPostVoteCount)
+		v1.GET("/vote/post/batch", controller.GetBatchPostVoteCountHandler)
 		v1.GET("/vote/post/detail", controller.GetPostVoteDetailHandler)
 
 		// 评论相关路由
