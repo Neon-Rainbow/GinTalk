@@ -3,7 +3,12 @@
 package kafka
 
 const (
-	TopicPost    = "post"
-	TopicLike    = "like"
+	// TopicPost 帖子主题
+	TopicPost = "post"
+	// TopicLike 点赞主题
+	TopicLike = "like"
+	// TopicComment 评论主题
 	TopicComment = "comment"
+	// TopicNotification 通知主题
+	TopicNotification = "notification"
 )

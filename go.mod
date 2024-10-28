@@ -20,6 +20,8 @@ require (
 	gorm.io/plugin/dbresolver v1.5.3
 )
 
+require github.com/gorilla/websocket v1.5.3 // indirect
+
 require (
 	github.com/bytedance/sonic v1.12.2 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect

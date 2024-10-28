@@ -2,8 +2,10 @@ package kafka
 
 import (
 	"GinTalk/DTO"
+	"GinTalk/websocket"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 
@@ -25,9 +27,9 @@ type Manager struct {
 // 它为每个 topic 创建 Kafka writers 以处理消息生产，并为每个 topic 创建 Kafka readers 以处理消息消费。
 //
 // 参数:
-//   - brokers: 表示 Kafka broker 地址的字符串切片。
-//   - topics: 表示要管理的 Kafka 主题的字符串切片。
-//   - groupID: 表示 Kafka 消费者组 ID 的字符串。
+//   - brokers([]string): 表示 Kafka broker 地址的字符串切片。
+//   - topics([]string): 表示要管理的 Kafka 主题的字符串切片。
+//   - groupID(string): 表示 Kafka 消费者组 ID 的字符串。
 //
 // 返回值:
 //   - *Manager: 一个指向包含已初始化 Kafka writers 和 readers 的 Manager 结构体的指针。
@@ -143,6 +145,19 @@ func SendCommentMessage(ctx context.Context, commentMsg *DTO.CommentDetail) erro
 	return GetKafkaManager().sendMessage(ctx, topic, nil, value)
 }
 
+// SendNotificationMessage 发送通知消息到 Kafka 主题。
+// 它将提供的通知消息序列化为 JSON 格式并使用 Kafka 管理器发送。
+//
+// 参数:
+//   - ctx: 控制取消和截止日期的上下文。
+//   - notificationMsg: 指向要发送的通知消息的指针。
+//
+// 返回值:
+//   - error: 如果消息无法发送，则返回错误，否则返回 nil。
+func SendNotificationMessage(ctx context.Context, notificationMsg *websocket.Message) error {
+	return fmt.Errorf("函数以及被废弃")
+}
+
 // startConsuming 启动消费者消费指定Topic的消息
 func (km *Manager) startConsuming(ctx context.Context, topic string) {
 	reader, exists := km.Readers[topic]
@@ -182,7 +197,7 @@ func (km *Manager) Close() {
 func InitKafkaManager() {
 	once.Do(func() {
 		brokers := []string{"localhost:9092"}
-		topics := []string{TopicPost, TopicLike, TopicComment}
+		topics := []string{TopicPost, TopicLike, TopicComment, TopicNotification}
 
 		// 初始化 KafkaManager
 		manager = newKafkaManager(brokers, topics, "example-group")

@@ -5,4 +5,3 @@ type Vote struct {
 	UserID string `json:"user_id"`
 	Vote   int    `json:"vote"`
 }
-

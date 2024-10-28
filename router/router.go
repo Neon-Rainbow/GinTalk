@@ -4,10 +4,12 @@ import (
 	"GinTalk/controller"
 	"GinTalk/logger"
 	"GinTalk/settings"
+	"GinTalk/websocket"
+	"net/http"
+
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 // SetupRouter 初始化 Gin 路由
@@ -92,6 +94,10 @@ func SetupRouter() *gin.Engine {
 		v1.DELETE("/vote/comment", controller.RevokeVoteHandler)
 		v1.GET("/vote/comment", controller.GetVoteCommentController)
 		v1.GET("/vote/comment/list", controller.GetVoteCommentListController)
+
+		v1.GET("/ws", func(c *gin.Context) {
+			controller.ServeWs(websocket.GetHub(), c)
+		})
 	}
 
 	// 404 和 405 路由处理

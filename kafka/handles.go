@@ -5,6 +5,7 @@ import (
 	"GinTalk/cache"
 	"GinTalk/dao"
 	"GinTalk/model"
+	"GinTalk/websocket"
 	"context"
 	"encoding/json"
 	"strconv"
@@ -49,7 +50,37 @@ func handleLikeMessage(msg kafka.Message) {
 		zap.L().Error("更新 Redis 热度失败", zap.Error(err))
 		return
 	}
+
 	zap.L().Info("更新 Redis 热度成功", zap.Int64("post_id", postID), zap.Int("vote", voteMsg.Vote))
+
+	// 如果是取消点赞，不发送通知
+	if voteMsg.Vote == 0 {
+		return
+	}
+
+	// 如果是点赞,发送通知
+	notificationMsg := websocket.Message{
+		Kind: websocket.MessageKindNotificationVote,
+		From: strconv.FormatInt(userID, 10),
+		To:   strconv.FormatInt(postID, 10),
+	}
+
+	// 获取帖子作者
+	post, err := dao.GetPostDetail(context.Background(), postID)
+	if err != nil {
+		zap.L().Error("获取帖子详情失败", zap.Error(err))
+		return
+	}
+	userID = post.AuthorId
+
+	err = websocket.GetHub().SendToUser(notificationMsg)
+	if err != nil {
+		zap.L().Error("发送通知失败", zap.Error(err))
+		return
+	}
+
+	zap.L().Info("发送通知成功", zap.Int64("post_id", postID), zap.Int64("user_id", userID))
+
 	return
 }
 
@@ -73,10 +104,33 @@ func handleCommentMessage(msg kafka.Message) {
 		return
 	}
 	zap.L().Info("保存评论成功", zap.Int64("comment_id", commentMsg.Comment.CommentID))
+
+	parentComment, err := dao.GetCommentByID(context.Background(), commentMsg.CommentRelation.ReplyID)
+	if err != nil {
+		zap.L().Error("获取父评论失败", zap.Error(err))
+		return
+	}
+	if parentComment.AuthorID == commentMsg.Comment.AuthorID {
+		// 评论自己的帖子，不发送通知
+		return
+	}
+
+	// 发送通知
+	notificationMsg := websocket.Message{
+		Kind: websocket.MessageKindNotificationComment,
+		From: strconv.FormatInt(commentMsg.Comment.AuthorID, 10),
+		To:   strconv.FormatInt(parentComment.AuthorID, 10),
+	}
+	err = websocket.GetHub().SendToUser(notificationMsg)
+	if err != nil {
+		zap.L().Error("发送通知失败", zap.Error(err))
+		return
+	}
+
 	return
 }
 
-// Vote 处理投票消息
+// handlePostMessage 处理帖子消息
 func handlePostMessage(msg kafka.Message) {
 	var postMsg DTO.PostDetail
 	if err := json.Unmarshal(msg.Value, &postMsg); err != nil {
