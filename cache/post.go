@@ -5,10 +5,11 @@ import (
 	"GinTalk/dao/Redis"
 	"context"
 	"encoding/json"
-	"github.com/go-redis/redis/v8"
 	"math"
 	"strconv"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 )
 
 const (
@@ -19,8 +20,21 @@ const (
 	PostStoreTime = time.Hour * 24 * 7
 )
 
-// hot 用于计算帖子的热度
-// Reddit 热度算法实现
+// hot 函数计算一个帖子的热度分数。
+//
+// 参数：
+//   - ups: 赞成票的数量。
+//   - date: 帖子的发布时间，使用 time.Time 类型。
+//
+// 返回值：
+//   - 帖子的热度分数，使用 float64 类型。
+//
+// 计算方法：
+//  1. 计算赞成票和反对票的差值。
+//  2. 计算票数差值的对数值。
+//  3. 根据票数差值的正负确定符号。
+//  4. 使用 Unix 时间戳计算时间差值。
+//  5. 结合符号、对数值和时间差值计算最终的热度分数。
 func hot(ups int, date time.Time) float64 {
 	downs := 0
 	s := float64(ups - downs)                     // 计算赞成票和反对票的差值
@@ -43,6 +57,15 @@ func hot(ups int, date time.Time) float64 {
 	return ans
 }
 
+// deltaHot 计算两个赞成票数量之间的“热度”差异。
+// 它使用赞成票数量的以 10 为底的对数来确定热度的变化。
+//
+// 参数：
+// - oldUp: 之前的赞成票数量。
+// - newUp: 新的赞成票数量。
+//
+// 返回值：
+// - 一个表示热度变化的 float64 值。
 func deltaHot(oldUp, newUp int) float64 {
 	return math.Log10(max(float64(newUp), 1)) - math.Log10(max(float64(oldUp), 1))
 }

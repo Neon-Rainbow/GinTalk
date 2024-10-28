@@ -182,13 +182,22 @@ func GetPostVoteDetailHandler(c *gin.Context) {
 	return
 }
 
-func GetBatchPostVoteCount(c *gin.Context) {
+// GetBatchPostVoteCountHandler 获取批量帖子投票数
+// @Summary 获取批量帖子投票数
+// @Description 获取批量帖子投票数
+// @Tags 投票
+// @Accept json
+// @Produce json
+// @Param post_id query []int64 true "帖子 ID 列表"
+// @Success 200 {object} Response
+// @Router /vote/post/batch [get]
+func GetBatchPostVoteCountHandler(c *gin.Context) {
 	type ids struct {
 		PostID []int64 `json:"post_id"`
 	}
 	var postIDs ids
-	if err := c.ShouldBindQuery(postIDs); err != nil {
-		ResponseErrorWithCode(c, code.InvalidParam)
+	if err := c.ShouldBindQuery(&postIDs); err != nil {
+		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
 	resp, apiError := service.GetBatchPostVoteCount(c.Request.Context(), postIDs.PostID)
@@ -197,5 +206,4 @@ func GetBatchPostVoteCount(c *gin.Context) {
 		return
 	}
 	ResponseSuccess(c, resp)
-	return
 }

@@ -17,10 +17,10 @@ const (
 	ContextUsernameKey = "username"
 )
 
-// JWTAuthMiddleware JWT 认证中间件, 用于验证用户是否登录
-// 如果用户登录, 会将用户ID设置到上下文中
-// 如果用户未登录, 会返回错误响应
-// 如果 token 在黑名单中, 会返回错误响应
+// JWTAuthMiddleware 是一个 Gin 的中间件函数, 用于处理 JWT 认证。
+// 它检查请求的 Authorization 头中是否存在有效的 JWT token。
+// 如果 token 缺失、格式错误或无效, 它会返回未授权错误并中止请求。
+// 如果 token 有效, 它会从 token 中提取用户信息并设置到请求上下文中。
 func JWTAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.Request.Header.Get("Authorization")
