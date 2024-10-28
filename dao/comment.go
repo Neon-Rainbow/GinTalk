@@ -46,6 +46,25 @@ func GetCommentByID(ctx context.Context, commentID int64) (*model.Comment, error
 	return &comment, err
 }
 
+func GetCommentRelationByID(ctx context.Context, commentID int64) (*model.CommentRelation, error) {
+	var relation model.CommentRelation
+	sqlStr := `
+		SELECT * FROM comment_relation
+		WHERE comment_id = ? AND delete_time = 0`
+	err := MySQL.GetDB().WithContext(ctx).Raw(sqlStr, commentID).Scan(&relation).Error
+	return &relation, err
+}
+
+func GetCommentParentUserID(ctx context.Context, commentID int64) (int64, error) {
+	var userID int64
+	sqlStr := `
+		SELECT author_id FROM comment
+		INNER JOIN comment_relation ON comment.comment_id = comment_relation.parent_id
+		WHERE comment_relation.comment_id = ?`
+	err := MySQL.GetDB().WithContext(ctx).Raw(sqlStr, commentID).Scan(&userID).Error
+	return userID, err
+}
+
 // CreateComment 创建评论
 func CreateComment(ctx context.Context, comment *model.Comment, replyID int64, parentID int64) error {
 	tx := MySQL.GetDB().Begin().WithContext(ctx)
