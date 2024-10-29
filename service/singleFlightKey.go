@@ -18,6 +18,14 @@ const (
 	SingleFlightKeyPostVoteCount = "post_vote_count_%d"
 )
 
-func GenerateSingleFlightKey(template string, params ...interface{}) string {
+// GenerateSingleFlightKey 通过使用提供的模板字符串和给定的参数生成单飞操作的唯一键。
+//
+// 参数:
+//   - template: 定义键格式的字符串模板。
+//   - params: 要格式化到模板中的可变参数列表。
+//
+// 返回值:
+//   - key: 一个格式化的字符串，作为单飞操作的唯一键。
+func GenerateSingleFlightKey(template string, params ...interface{}) (key string) {
 	return fmt.Sprintf(template, params...)
 }
