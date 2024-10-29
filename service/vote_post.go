@@ -65,7 +65,7 @@ func VotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiErro
 //   - *apiError.ApiError: 如果取消投票过程失败，返回包含错误代码和消息的错误对象；
 //     如果取消投票成功，则返回nil。
 func RevokeVotePost(ctx context.Context, postID int64, userID int64) *apiError.ApiError {
-	key := GenerateSingleFlightKey(SingleFlightKetRevokeVotePost, postID, userID)
+	key := GenerateSingleFlightKey(SingleFlightKeyVotePost, postID, userID)
 	go func() {
 		_, err, _ := voteGroup.Do(key, func() (interface{}, error) {
 			err := kafka.SendLikeMessage(ctx, &kafka.Vote{
