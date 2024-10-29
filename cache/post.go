@@ -128,6 +128,17 @@ func GetPostIDs(ctx context.Context, order, pageNum, pageSize int) ([]int64, err
 	return resp, nil
 }
 
+// GetPostSummary 从 Redis 中获取帖子摘要信息。
+// 它使用提供的帖子 ID 列表，从 Redis 中获取帖子摘要信息。
+//
+// 参数:
+//   - ctx: 操作的上下文，允许取消和超时控制。
+//   - postID: 要获取的帖子 ID 列表。
+//
+// Returns:
+//   - []DTO.PostSummary: 一个帖子摘要信息的切片。
+//   - []int64: 无法在 Redis 中找到的帖子 ID 列表。
+//   - error: 如果操作失败，则返回错误对象，否则返回 nil。
 func GetPostSummary(ctx context.Context, postID []int64) ([]DTO.PostSummary, []int64, error) {
 	strKeys := make([]string, len(postID))
 	for i, key := range postID {
