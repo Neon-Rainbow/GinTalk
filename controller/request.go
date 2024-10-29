@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,11 +35,16 @@ func getCurrentUsername(c *gin.Context) (username string, err error) {
 	return
 }
 
+// isUserIDMatch 检查给定的 userID 是否与从 gin.Context 中提取的当前用户 ID 匹配。
+// 如果 ID 匹配，则返回 true，否则返回 false。
+//
+// 参数:
+//   - c: *gin.Context - 从中提取当前用户 ID 的上下文
+//   - userID: int64 - 要检查的用户 ID
 func isUserIDMatch(c *gin.Context, userID int64) bool {
-	//currentUserID, err := getCurrentUserID(c)
-	//if err != nil {
-	//	return false
-	//}
-	//return currentUserID == userID
-	return true // 暂时不做权限控制
+	currentUserID, err := getCurrentUserID(c)
+	if err != nil {
+		return false
+	}
+	return currentUserID == userID
 }

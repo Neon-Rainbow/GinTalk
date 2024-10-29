@@ -26,7 +26,7 @@ func CreatePost(ctx context.Context, post *DTO.PostDetail) error {
 		return fmt.Errorf("社区ID不能为空")
 	}
 
-	sqlStr1 := `INSERT INTO post (post_id, title,summary, author_id, community_id) VALUES (?, ?, ?,?, ?)`
+	sqlStr1 := `INSERT INTO post (post_id, title,summary, author_id, community_id) VALUES (?, ?, ?, ?, ?)`
 	sqlStr2 := `INSERT INTO content_votes (post_id) VALUES (?)`
 	sqlStr3 := `INSERT INTO post_content (post_id, content) VALUES (?, ?)`
 
