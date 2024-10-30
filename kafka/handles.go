@@ -15,12 +15,22 @@ import (
 )
 
 // handleLikeMessage 处理点赞消息
+//
+// 参数:
+//   - msg: 包含点赞信息的 kafka.Message，格式为 JSON。
+//
+// 该函数执行以下步骤:
+//  1. 将 JSON 消息反序列化为 Vote DTO。
+//  2. 将投票记录保存到数据库。
+//  3. 更新 Redis 热度。
+//  4. 如果是点赞，发送通知给帖子作者。
+//
+// 如果任何步骤失败，记录相应的错误消息。
 func handleLikeMessage(msg kafka.Message) {
 	// 处理消息
 	var voteMsg Vote
 	if err := json.Unmarshal(msg.Value, &voteMsg); err != nil {
 		zap.L().Error("序列化消息失败", zap.Error(err))
-		return
 	}
 	postID, err := strconv.ParseInt(voteMsg.PostID, 10, 64)
 	if err != nil {
@@ -32,6 +42,7 @@ func handleLikeMessage(msg kafka.Message) {
 		zap.L().Error("转换 user id 失败", zap.Error(err))
 		return
 	}
+
 	// 向数据库中添加投票记录和更新投票数
 	err = dao.AddPostVoteWithTx(context.Background(), postID, userID, voteMsg.Vote)
 	if err != nil {
@@ -84,7 +95,19 @@ func handleLikeMessage(msg kafka.Message) {
 	return
 }
 
-// handleCommentMessage 处理评论消息
+// handleCommentMessage 处理包含评论详情的 Kafka 消息，
+// 将评论保存到数据库，并在必要时发送通知。
+//
+// 参数:
+//   - msg: 包含评论详情的 kafka.Message，格式为 JSON。
+//
+// 该函数执行以下步骤:
+//  1. 将 JSON 消息反序列化为 CommentDetail DTO。
+//  2. 将 DTO 转换为 Comment 模型并保存到数据库。
+//  3. 根据 ReplyID 获取父评论。
+//  4. 如果评论不是回复作者自己的帖子，发送通知给父评论的作者。
+//
+// 如果任何步骤失败，记录相应的错误消息。
 func handleCommentMessage(msg kafka.Message) {
 	var commentMsg DTO.CommentDetail
 	if err := json.Unmarshal(msg.Value, &commentMsg); err != nil {
@@ -130,7 +153,16 @@ func handleCommentMessage(msg kafka.Message) {
 	return
 }
 
-// handleCreatePostMessage 处理帖子消息
+// handleCreatePostMessage 处理 Kafka 消息以创建帖子。
+// 如果任何步骤失败，它会记录错误并返回。
+//
+// 参数:
+//   - msg (kafka.Message): 包含帖子数据的 Kafka 消息。
+//
+// 它执行以下步骤：
+//  1. 将消息值反序列化为 PostDetail DTO。
+//  2. 将帖子保存到数据库。
+//  3. 将帖子摘要保存到 Redis。
 func handleCreatePostMessage(msg kafka.Message) {
 	var postMsg DTO.PostDetail
 	if err := json.Unmarshal(msg.Value, &postMsg); err != nil {
