@@ -3,8 +3,8 @@
 package kafka
 
 const (
-	// TopicPost 帖子主题
-	TopicPost = "post"
+	// TopicCreatePost 帖子主题
+	TopicCreatePost = "post"
 	// TopicLike 点赞主题
 	TopicLike = "like"
 	// TopicComment 评论主题
