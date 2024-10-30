@@ -4,7 +4,6 @@ import (
 	"GinTalk/controller"
 	"GinTalk/logger"
 	"GinTalk/settings"
-	"GinTalk/websocket"
 	"net/http"
 
 	"github.com/gin-contrib/requestid"
@@ -95,9 +94,7 @@ func SetupRouter() *gin.Engine {
 		v1.GET("/vote/comment", controller.GetVoteCommentController)
 		v1.GET("/vote/comment/list", controller.GetVoteCommentListController)
 
-		v1.GET("/ws", func(c *gin.Context) {
-			controller.ServeWs(websocket.GetHub(), c)
-		})
+		v1.GET("/ws", controller.WebsocketHandle)
 	}
 
 	// 404 和 405 路由处理
