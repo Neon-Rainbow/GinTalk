@@ -88,6 +88,11 @@ func GetPostList(ctx context.Context, pageNum int, pageSize int, order int) ([]D
 			}
 		}
 
+		// 如果缓存中没有缺失的帖子, 则直接返回
+		if len(missingIDs) == 0 {
+			return redisList, nil
+		}
+
 		list, err := dao.GetPostListBatch(ctx, missingIDs)
 		if err != nil {
 			return nil, &apiError.ApiError{
