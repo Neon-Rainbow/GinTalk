@@ -65,5 +65,4 @@ func updateCommentVoteCount(commentID int64, count int) {
 		zap.L().Error("更新评论投票数失败", zap.Int64("commentID", commentID), zap.Error(err))
 		return
 	}
-	return
 }

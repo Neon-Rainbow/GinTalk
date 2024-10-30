@@ -130,8 +130,8 @@ func handleCommentMessage(msg kafka.Message) {
 	return
 }
 
-// handlePostMessage 处理帖子消息
-func handlePostMessage(msg kafka.Message) {
+// handleCreatePostMessage 处理帖子消息
+func handleCreatePostMessage(msg kafka.Message) {
 	var postMsg DTO.PostDetail
 	if err := json.Unmarshal(msg.Value, &postMsg); err != nil {
 		zap.L().Error("序列化消息失败", zap.Error(err))

@@ -10,9 +10,11 @@ import (
 	"GinTalk/pkg/snowflake"
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"slices"
 	"time"
+
+	"go.uber.org/zap"
+	"golang.org/x/sync/singleflight"
 )
 
 // DelayDeleteTime 设置延迟双删的时间
@@ -40,6 +42,19 @@ func CreatePost(ctx context.Context, postDTO *DTO.PostDetail) *apiError.ApiError
 	return nil
 }
 
+// GetPostList 根据提供的分页和排序参数检索帖子摘要列表。
+// 它使用 singleflight 机制防止缓存雪崩，并尝试首先从 Redis 缓存中获取数据。
+// 如果缓存中缺少一些帖子，它会从数据库中获取这些帖子并更新缓存。
+//
+// 参数:
+//   - ctx: 用于管理请求生命周期的上下文。
+//   - pageNum: 分页的页码。如果小于或等于 0，则默认为 1。
+//   - pageSize: 每页的帖子数量。如果小于或等于 0，则默认为 10。
+//   - order: 帖子检索的排序方式。
+//
+// 返回:
+//   - []DTO.PostSummary: 帖子摘要的切片。
+//   - *apiError.ApiError: 如果过程中发生错误，则返回错误对象。
 func GetPostList(ctx context.Context, pageNum int, pageSize int, order int) ([]DTO.PostSummary, *apiError.ApiError) {
 	// pageNum 和 pageSize 不能小于等于 0
 	if pageNum <= 0 {
@@ -49,42 +64,61 @@ func GetPostList(ctx context.Context, pageNum int, pageSize int, order int) ([]D
 		pageSize = 10
 	}
 
-	postIDs, err := cache.GetPostIDs(ctx, order, pageNum, pageSize)
-	if err != nil {
-		return nil, &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  fmt.Sprintf("获取帖子列表失败: %v", err),
-		}
-	}
+	// 使用单飞模式, 从 Redis 中获取帖子列表
+	sgKey := GenerateSingleFlightKey(SingleFlightKeyPostList, order, pageNum, pageSize)
 
-	// 首先从 Redis 中获取帖子列表
-	redisList, missingIDs, err := cache.GetPostSummary(ctx, postIDs)
-	if err != nil {
-		return nil, &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  fmt.Sprintf("获取帖子列表失败: %v", err),
-		}
-	}
+	// 使用 singleflight 防止缓存雪崩
+	var group singleflight.Group
 
-	list, err := dao.GetPostListBatch(ctx, missingIDs)
-	if err != nil {
-		return nil, &apiError.ApiError{
-			Code: code.ServerError,
-			Msg:  fmt.Sprintf("获取帖子列表失败: %v", err),
-		}
-	}
-
-	// 将缺失的帖子存入 Redis
-	go func() {
-		for _, post := range list {
-			err := cache.SavePost(context.Background(), &post)
-			if err != nil {
-				zap.L().Error("保存帖子到 Redis 失败", zap.Error(err))
+	result, err, _ := group.Do(sgKey, func() (interface{}, error) {
+		postIDs, err := cache.GetPostIDs(ctx, order, pageNum, pageSize)
+		if err != nil {
+			return nil, &apiError.ApiError{
+				Code: code.ServerError,
+				Msg:  fmt.Sprintf("获取帖子列表失败: %v", err),
 			}
 		}
-	}()
 
-	return slices.Concat(redisList, list), nil
+		// 首先从 Redis 中获取帖子列表
+		redisList, missingIDs, err := cache.GetPostSummary(ctx, postIDs)
+		if err != nil {
+			return nil, &apiError.ApiError{
+				Code: code.ServerError,
+				Msg:  fmt.Sprintf("获取帖子列表失败: %v", err),
+			}
+		}
+
+		// 如果缓存中没有缺失的帖子, 则直接返回
+		if len(missingIDs) == 0 {
+			return redisList, nil
+		}
+
+		list, err := dao.GetPostListBatch(ctx, missingIDs)
+		if err != nil {
+			return nil, &apiError.ApiError{
+				Code: code.ServerError,
+				Msg:  fmt.Sprintf("获取帖子列表失败: %v", err),
+			}
+		}
+
+		// 将缺失的帖子存入 Redis
+		go func() {
+			for _, post := range list {
+				err := cache.SavePost(context.Background(), &post)
+				if err != nil {
+					zap.L().Error("保存帖子到 Redis 失败", zap.Error(err))
+				}
+			}
+		}()
+
+		return slices.Concat(redisList, list), nil
+	})
+
+	if err != nil {
+		return nil, err.(*apiError.ApiError)
+	}
+
+	return result.([]DTO.PostSummary), nil
 }
 
 func GetPostDetail(ctx context.Context, postID int64) (*DTO.PostDetail, *apiError.ApiError) {

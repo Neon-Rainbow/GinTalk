@@ -101,7 +101,7 @@ func (km *Manager) sendMessage(ctx context.Context, topic string, key, value []b
 // 返回值:
 //   - error: 如果消息无法序列化或发送，则返回错误。
 func SendPostMessage(ctx context.Context, postMsg *DTO.PostDetail) error {
-	topic := TopicPost
+	topic := TopicCreatePost
 	value, err := json.Marshal(postMsg)
 	if err != nil {
 		return err
@@ -197,7 +197,7 @@ func (km *Manager) Close() {
 func InitKafkaManager() {
 	once.Do(func() {
 		brokers := []string{"localhost:9092"}
-		topics := []string{TopicPost, TopicLike, TopicComment, TopicNotification}
+		topics := []string{TopicCreatePost, TopicLike, TopicComment, TopicNotification}
 
 		// 初始化 KafkaManager
 		manager = newKafkaManager(brokers, topics, "example-group")
@@ -215,7 +215,7 @@ func GetKafkaManager() *Manager {
 type handleFunc func(kafka.Message)
 
 var handles = map[string]handleFunc{
-	TopicPost:    handlePostMessage,
+	TopicCreatePost:    handleCreatePostMessage,
 	TopicLike:    handleLikeMessage,
 	TopicComment: handleCommentMessage,
 }
