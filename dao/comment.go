@@ -7,7 +7,20 @@ import (
 	"time"
 )
 
-// GetTopComments 获取顶层评论
+// GetTopComments retrieves the top-level comments for a post.
+// It fetches comments that are not deleted and have a status of 1,
+// ordered by creation time in descending order. Pagination is supported
+// through pageSize and pageNum parameters.
+//
+// Parameters:
+//   - ctx: The context for managing request-scoped values, cancellation, and deadlines.
+//   - postID: The ID of the post for which to retrieve comments.
+//   - pageSize: The number of comments to retrieve per page.
+//   - pageNum: The page number to retrieve.
+//
+// Returns:
+//   - A slice of model.Comment containing the retrieved comments.
+//   - An error if the operation fails.
 func GetTopComments(ctx context.Context, postID int64, pageSize, pageNum int) ([]model.Comment, error) {
 	var comment []model.Comment
 	sqlStr := `
@@ -15,8 +28,10 @@ func GetTopComments(ctx context.Context, postID int64, pageSize, pageNum int) ([
 		FROM comment
 		INNER JOIN comment_relation ON comment.comment_id = comment_relation.comment_id
 		WHERE comment.post_id = ? AND comment.status = 1 AND comment.delete_time = 0 AND comment_relation.delete_time = 0 AND comment_relation.parent_id = 0
-		ORDER BY comment.create_time DESC`
-	err := MySQL.GetDB().WithContext(ctx).Raw(sqlStr, postID).Scan(&comment).Error
+		ORDER BY comment.create_time DESC
+		LIMIT ? OFFSET ?
+		`
+	err := MySQL.GetDB().WithContext(ctx).Raw(sqlStr, postID, pageSize, (pageNum-1)*pageSize).Scan(&comment).Error
 
 	return comment, err
 }
@@ -141,6 +156,7 @@ func GetTopCommentCount(ctx context.Context, postID int64) (int64, error) {
 	return count, err
 }
 
+// GetSubCommentCount 获取子评论数量
 func GetSubCommentCount(ctx context.Context, parentID int64) (int64, error) {
 	var count int64
 	sqlStr := `

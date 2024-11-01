@@ -4,8 +4,10 @@ import (
 	"GinTalk/settings"
 	"context"
 	"fmt"
-	"github.com/go-redis/redis/v8"
 	"sync"
+
+	"github.com/go-redis/redis/v8"
+	"go.uber.org/zap"
 )
 
 // redisClient 用于存储redis连接
@@ -36,7 +38,10 @@ func initRedis(config *settings.RedisConfig) (err error) {
 
 // Close 关闭redis连接
 func Close() {
-	_ = redisClient.Close()
+	err := redisClient.Close()
+	if err != nil {
+		zap.L().Error("关闭redis连接失败", zap.Error(err))
+	}
 }
 
 // GetRedisClient 获取redis连接
