@@ -27,9 +27,15 @@ const (
 
 // Message 是 websocket 传输的消息
 type Message struct {
+	// Kind 消息类型
 	Kind string `json:"kind"`
+
+	// From 发送者
 	From string `json:"from"`
-	To   string `json:"to,omitempty"`
-	Sent int64  `json:"sent,omitempty"`
+
+	// To 接收者
+	To string `json:"to,omitempty"`
+
+	// Data 消息内容
 	Data string `json:"data,omitempty"`
 }
