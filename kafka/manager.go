@@ -85,7 +85,7 @@ func (km *Manager) sendMessage(ctx context.Context, topic string, key, value []b
 		Value: value,
 	}
 	if err := writer.WriteMessages(ctx, msg); err != nil {
-		log.Printf("Failed to send message to %s: %v", topic, err)
+		zap.L().Error("发送消息失败", zap.Error(err))
 		return err
 	}
 	return nil
@@ -168,7 +168,7 @@ func (km *Manager) startConsuming(ctx context.Context, topic string) {
 	for {
 		msg, err := reader.ReadMessage(ctx)
 		if err != nil {
-			log.Printf("Error reading message from %s: %v", topic, err)
+			zap.L().Error("读取消息失败", zap.Error(err))
 			break
 		}
 		handles[topic](msg)
@@ -215,7 +215,7 @@ func GetKafkaManager() *Manager {
 type handleFunc func(kafka.Message)
 
 var handles = map[string]handleFunc{
-	TopicCreatePost:    handleCreatePostMessage,
-	TopicLike:    handleLikeMessage,
-	TopicComment: handleCommentMessage,
+	TopicCreatePost: handleCreatePostMessage,
+	TopicLike:       handleLikeMessage,
+	TopicComment:    handleCommentMessage,
 }
