@@ -1,36 +1,30 @@
 package controller
 
 import (
-	"errors"
-
 	"github.com/gin-gonic/gin"
 )
 
 // getCurrentUserID 获取当前登录用户的ID
-func getCurrentUserID(c *gin.Context) (userID int64, err error) {
+func getCurrentUserID(c *gin.Context) (userID int64, exist bool) {
 	_userID, ok := c.Get(ContextUserIDKey)
 	if !ok {
-		err = errors.New("当前用户未登录")
-		return
+		return 0, false
 	}
 	userID, ok = _userID.(int64)
 	if !ok {
-		err = errors.New("当前用户未登录")
-		return
+		return 0, false
 	}
 	return
 }
 
-func getCurrentUsername(c *gin.Context) (username string, err error) {
+func getCurrentUsername(c *gin.Context) (username string, exist bool) {
 	_username, ok := c.Get(ContextUsernameKey)
 	if !ok {
-		err = errors.New("当前用户未登录")
-		return
+		return "", false
 	}
 	username, ok = _username.(string)
 	if !ok {
-		err = errors.New("当前用户未登录")
-		return
+		return "", false
 	}
 	return
 }
@@ -42,8 +36,8 @@ func getCurrentUsername(c *gin.Context) (username string, err error) {
 //   - c: *gin.Context - 从中提取当前用户 ID 的上下文
 //   - userID: int64 - 要检查的用户 ID
 func isUserIDMatch(c *gin.Context, userID int64) bool {
-	currentUserID, err := getCurrentUserID(c)
-	if err != nil {
+	currentUserID, exist := getCurrentUserID(c)
+	if !exist {
 		return false
 	}
 	return currentUserID == userID
