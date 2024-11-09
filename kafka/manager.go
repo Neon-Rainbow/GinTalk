@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/segmentio/kafka-go"
@@ -77,7 +76,7 @@ func newKafkaManager(brokers []string, topics []string, groupID string) *Manager
 func (km *Manager) sendMessage(ctx context.Context, topic string, key, value []byte) error {
 	writer, exists := km.Writers[topic]
 	if !exists {
-		log.Printf("Producer for topic %s not found", topic)
+		zap.L().Error("生产者不存在", zap.String("topic", topic))
 		return nil
 	}
 	msg := kafka.Message{
@@ -162,7 +161,7 @@ func SendNotificationMessage(ctx context.Context, notificationMsg *websocket.Mes
 func (km *Manager) startConsuming(ctx context.Context, topic string) {
 	reader, exists := km.Readers[topic]
 	if !exists {
-		log.Printf("Consumer for topic %s not found", topic)
+		zap.L().Error("消费者不存在", zap.String("topic", topic))
 		return
 	}
 	for {
