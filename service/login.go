@@ -11,14 +11,21 @@ import (
 	"GinTalk/pkg/jwt"
 	"GinTalk/pkg/snowflake"
 	"context"
-	"github.com/jinzhu/copier"
 	"time"
+
+	"github.com/jinzhu/copier"
 )
 
 // LoginService 登录服务
 func LoginService(ctx context.Context, dto *DTO.LoginRequestDTO) (*DTO.LoginResponseDTO, *apiError.ApiError) {
 	user, err := dao.FindUserByUsername(ctx, dto.Username)
-	if err != nil || user == nil {
+	if err != nil {
+		return nil, &apiError.ApiError{
+			Code: code.ServerError,
+			Msg:  "登录失败",
+		}
+	}
+	if user == nil {
 		return nil, &apiError.ApiError{
 			Code: code.UserNotExist,
 			Msg:  "用户不存在",
