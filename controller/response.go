@@ -3,14 +3,15 @@ package controller
 import (
 	"GinTalk/pkg/apiError"
 	"GinTalk/pkg/code"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Response struct {
 	Code code.RespCode `json:"code"`
 	Msg  string        `json:"msg,omitempty"`
-	Data interface{}   `json:"data,omitempty"`
+	Data any           `json:"data,omitempty"`
 }
 
 func ResponseSuccess(c *gin.Context, data interface{}) {
