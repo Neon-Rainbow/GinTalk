@@ -8,13 +8,29 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Response 响应结构体
+// 通过该结构体返回响应数据
+// 字段:
+//   - Code: 响应码
+//   - Msg: 响应消息
+//   - Data: 响应数据
 type Response struct {
 	Code code.RespCode `json:"code"`
 	Msg  string        `json:"msg,omitempty"`
 	Data any           `json:"data,omitempty"`
 }
 
-func ResponseSuccess(c *gin.Context, data interface{}) {
+// ResponseSuccess 成功响应
+// 返回 200 状态码
+//
+// 参数:
+//   - c: gin.Context
+//   - data: 响应数据
+//
+// 使用示例:
+//
+//	ResponseSuccess(c, data)
+func ResponseSuccess(c *gin.Context, data any) {
 	c.JSON(http.StatusOK, Response{
 		Code: code.Success,
 		Msg:  "success",
