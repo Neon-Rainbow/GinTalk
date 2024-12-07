@@ -17,20 +17,20 @@ import (
 //   - c: 请求的 Gin 上下文。
 //
 // 该函数执行以下步骤:
-//   1. 检索 WebSocket hub 实例。
-//   2. 从上下文中获取当前用户 ID。
-//   3. 使用用户 ID 记录 WebSocket 连接。
-//   4. 将 HTTP 连接升级为 WebSocket 连接。
-//   5. 创建一个新的 WebSocket 客户端实例。
-//   6. 将新客户端注册到 hub。
-//   7. 启动客户端的读写泵。
+//  1. 检索 WebSocket hub 实例。
+//  2. 从上下文中获取当前用户 ID。
+//  3. 使用用户 ID 记录 WebSocket 连接。
+//  4. 将 HTTP 连接升级为 WebSocket 连接。
+//  5. 创建一个新的 WebSocket 客户端实例。
+//  6. 将新客户端注册到 hub。
+//  7. 启动客户端的读写泵。
 func WebsocketHandle(c *gin.Context) {
 	hub := websocket.GetHub()
-	_userID, err := getCurrentUserID(c)
-	if err != nil {
-		zap.L().Error("Get user id from context failed")
-		return
+	_userID, exist := getCurrentUserID(c)
+	if !exist {
+		zap.L().Error("获取用户 ID 失败")
 	}
+
 	userID := fmt.Sprintf("%v", _userID)
 	zap.L().Info("WebSocket connected", zap.String("user_id", userID))
 	// 升级HTTP到WebSocket协议
