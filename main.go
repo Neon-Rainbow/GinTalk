@@ -3,6 +3,7 @@ package main
 import (
 	"GinTalk/dao/MySQL"
 	"GinTalk/dao/Redis"
+	"GinTalk/etcd"
 	"GinTalk/kafka"
 	"GinTalk/logger"
 	"GinTalk/pkg/snowflake"
@@ -26,6 +27,10 @@ func main() {
 
 	defer MySQL.Close()
 	defer Redis.Close()
+
+	if err := etcd.GetService().Register(); err != nil {
+		fmt.Printf("注册服务失败,错误原因: %v\n", err)
+	}
 
 	// 初始化路由
 	r := router.SetupRouter()

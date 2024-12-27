@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
 
@@ -29,6 +30,12 @@ func SetupRouter() *gin.Engine {
 	default:
 		gin.SetMode(gin.DebugMode)
 	}
+
+	// 注册 prometheus 监控路由, 用于监控应用的性能
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
+	// 注册 Prometheus 中间件, 用于统计接口访问次数
+	r.Use(controller.PrometheusMiddleware())
 
 	// 创建 API v1 路由组
 	v1 := r.Group("/api/v1").Use(

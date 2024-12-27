@@ -46,15 +46,33 @@ type LoggerConfig struct {
 	Compress         bool     `mapstructure:"compress"`
 }
 
+type Etcd struct {
+	Endpoints []string `mapstructure:"endpoints"`
+	Timeout   int      `mapstructure:"timeout"`
+}
+
+type ServiceRegistry struct {
+	ID              string `mapstructure:"id"`
+	Name            string `mapstructure:"name"`
+	Host            string `mapstructure:"host"`
+	Port            int    `mapstructure:"port"`
+	LeaseTime       int64  `mapstructure:"leaseTime"`
+	Interval        int64  `mapstructure:"interval"`
+	Timeout         int64  `mapstructure:"timeout"`
+	DeregisterAfter int64  `mapstructure:"deregisterAfter"`
+}
+
 type Settings struct {
-	Host           string `mapstructure:"host"`
-	Port           int    `mapstructure:"port"`
-	Timeout        int    `mapstructure:"timeout"`
-	PasswordSecret string `mapstructure:"password_secret"`
-	Mode           string `mapstructure:"mode"`
-	*MysqlConfig   `mapstructure:"mysql"`
-	*RedisConfig   `mapstructure:"redis"`
-	*LoggerConfig  `mapstructure:"logger"`
+	Host             string `mapstructure:"host"`
+	Port             int    `mapstructure:"port"`
+	Timeout          int    `mapstructure:"timeout"`
+	PasswordSecret   string `mapstructure:"password_secret"`
+	Mode             string `mapstructure:"mode"`
+	*MysqlConfig     `mapstructure:"mysql"`
+	*RedisConfig     `mapstructure:"redis"`
+	*LoggerConfig    `mapstructure:"logger"`
+	*Etcd            `mapstructure:"etcd"`
+	*ServiceRegistry `mapstructure:"service_registry"`
 }
 
 // initConfig 用于初始化配置文件
