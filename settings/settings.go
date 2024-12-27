@@ -1,10 +1,12 @@
 package settings
 
 import (
+	"flag"
 	"fmt"
+	"sync"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"sync"
 )
 
 var conf = new(Settings)
@@ -57,7 +59,10 @@ type Settings struct {
 
 // initConfig 用于初始化配置文件
 func initConfig() error {
-	viper.SetConfigFile("./conf/config.yaml")
+
+	// 从命令行中读取配置文件路径
+	configFilePath := flag.String("config", "./conf/config.yaml", "配置文件路径")
+	viper.SetConfigFile(*configFilePath)
 
 	// 设置mysql和redis的默认端口和host
 	viper.SetDefault("mysql.host", "localhost")
