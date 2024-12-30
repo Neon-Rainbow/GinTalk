@@ -10,6 +10,7 @@ import (
 	"GinTalk/router"
 	"GinTalk/settings"
 	"fmt"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -18,7 +19,7 @@ func main() {
 	snowflake.SetMachineID(1)
 
 	if err := logger.SetupGlobalLogger(settings.GetConfig().LoggerConfig); err != nil {
-		fmt.Printf("初始化日志库失败,错误原因: %v\n", err)
+		panic(fmt.Sprintf("初始化日志失败: %v\n", err))
 	}
 
 	// 初始化配置
@@ -29,13 +30,13 @@ func main() {
 	defer Redis.Close()
 
 	if err := etcd.GetService().Register(); err != nil {
-		fmt.Printf("注册服务失败,错误原因: %v\n", err)
+		zap.L().Fatal("注册服务失败", zap.Error(err))
 	}
 
 	// 初始化路由
 	r := router.SetupRouter()
 	err := r.Run(fmt.Sprintf("%s:%d", settings.GetConfig().Host, settings.GetConfig().Port))
 	if err != nil {
-		fmt.Printf("启动失败,错误原因: %v\n", err)
+		zap.L().Fatal("启动服务失败", zap.Error(err))
 	}
 }
