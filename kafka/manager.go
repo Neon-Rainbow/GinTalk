@@ -36,6 +36,16 @@ func newKafkaManager(brokers []string, topics []string, groupID string) *Manager
 	writers := make(map[string]*kafka.Writer)
 	readers := make(map[string]*kafka.Reader)
 
+	// 初始化之前先验证 Kafka 是否可以连接
+	for _, broker := range brokers {
+		conn, err := kafka.Dial("tcp", broker)
+		if err != nil {
+			zap.L().Fatal("连接 Kafka 失败", zap.Error(err))
+			return nil
+		}
+		conn.Close()
+	}
+
 	// 初始化生产者
 	for _, topic := range topics {
 		writers[topic] = kafka.NewWriter(kafka.WriterConfig{
@@ -194,17 +204,15 @@ func (km *Manager) Close() {
 // 它设置 Kafka brokers 和 topics，并在单独的 goroutine 中开始消费指定 topics 的消息。
 // 此函数使用 sync.Once 机制确保初始化只执行一次。
 func InitKafkaManager() {
-	once.Do(func() {
-		brokers := []string{"localhost:9092"}
-		topics := []string{TopicCreatePost, TopicLike, TopicComment, TopicNotification}
+	brokers := []string{"localhost:9092"}
+	topics := []string{TopicCreatePost, TopicLike, TopicComment, TopicNotification}
 
-		// 初始化 KafkaManager
-		manager = newKafkaManager(brokers, topics, "example-group")
+	// 初始化 KafkaManager
+	manager = newKafkaManager(brokers, topics, "example-group")
 
-		for _, topic := range topics {
-			go manager.startConsuming(context.Background(), topic)
-		}
-	})
+	for _, topic := range topics {
+		go manager.startConsuming(context.Background(), topic)
+	}
 }
 
 func GetKafkaManager() *Manager {
