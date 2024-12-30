@@ -123,9 +123,6 @@ func mustInitConfig() {
 // GetConfig 用于获取配置文件
 // 使用单例模式，确保配置文件只被初始化一次
 func GetConfig() *Settings {
-	once.Do(
-		func() {
-			mustInitConfig()
-		})
+	once.Do(mustInitConfig)
 	return conf
 }
