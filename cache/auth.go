@@ -32,6 +32,16 @@ func AddTokenToBlacklist(ctx context.Context, token string, expiration time.Dura
 // 返回:
 //   - bool: 如果token在黑名单中，则返回true，否则返回false。
 //   - error: 如果操作失败，则返回错误对象，否则返回nil。
+//
+// 使用示例:
+//
+//	isInBlacklist, err := cache.IsTokenInBlacklist(ctx, token)
+//	if err != nil {
+//		// 处理错误
+//	}
+//	if isInBlacklist {
+//		// token在黑名单中
+//	}
 func IsTokenInBlacklist(ctx context.Context, token string) (bool, error) {
 	key := GenerateRedisKey(BlackListTokenKeyTemplate, token)
 	exists, err := Redis.GetRedisClient().Exists(ctx, key).Result()
