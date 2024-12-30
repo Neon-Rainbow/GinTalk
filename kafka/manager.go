@@ -48,10 +48,11 @@ func newKafkaManager(brokers []string, topics []string, groupID string) *Manager
 
 	// 初始化生产者
 	for _, topic := range topics {
-		writers[topic] = kafka.NewWriter(kafka.WriterConfig{
-			Brokers: brokers,
-			Topic:   topic,
-		})
+		writers[topic] = &kafka.Writer{
+			Addr:     kafka.TCP(brokers...),
+			Topic:    topic,
+			Balancer: &kafka.LeastBytes{},
+		}
 	}
 
 	// 初始化消费者
