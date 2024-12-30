@@ -180,6 +180,8 @@ func DeletePost(ctx context.Context, postID int64) error {
 	return nil
 }
 
+// DeletePostSummary 删除帖子摘要信息
+// 从 Redis 中删除指定帖子的摘要信息。
 func DeletePostSummary(ctx context.Context, postID int64) error {
 	key := GenerateRedisKey(PostSummaryTemplate, postID)
 	if err := Redis.GetRedisClient().Del(ctx, key).Err(); err != nil {
