@@ -75,8 +75,10 @@ type Settings struct {
 	*ServiceRegistry `mapstructure:"service_registry"`
 }
 
-// initConfig 用于初始化配置文件
-func initConfig() error {
+// mustInitConfig 用于初始化配置文件
+// 从命令行中读取配置文件路径
+// 在初始化失败时，会触发 panic
+func mustInitConfig() {
 
 	// 从命令行中读取配置文件路径
 	configFilePath := flag.String("config", "./conf/config.yaml", "配置文件路径")
@@ -108,14 +110,14 @@ func initConfig() error {
 	})
 
 	// 读取配置文件
-	err := viper.ReadInConfig()
-	if err != nil {
+	if err := viper.ReadInConfig(); err != nil {
 		panic(fmt.Errorf("ReadInConfig failed, err: %v", err))
 	}
+
+	// 将配置文件解析到结构体中
 	if err := viper.Unmarshal(&conf); err != nil {
 		panic(fmt.Errorf("unmarshal to conf failed, err:%v", err))
 	}
-	return err
 }
 
 // GetConfig 用于获取配置文件
@@ -123,9 +125,7 @@ func initConfig() error {
 func GetConfig() *Settings {
 	once.Do(
 		func() {
-			if err := initConfig(); err != nil {
-				fmt.Printf("初始化配置文件失败,错误原因: %v\n", err)
-			}
+			mustInitConfig()
 		})
 	return conf
 }
