@@ -101,6 +101,18 @@ func SavePost(ctx context.Context, summary *DTO.PostSummary) error {
 	return nil
 }
 
+// GetPostIDs 从 Redis 中获取帖子 ID 列表。
+// 它使用提供的排序方式、页码和每页帖子数量，从 Redis 中获取帖子 ID 列表。
+//
+// 参数：
+//   - ctx: 操作的上下文，允许取消和超时控制。
+//   - order: 帖子的排序方式。其中 1 表示按热度排序，2 表示按时间排序。
+//   - pageNum: 分页的页码。
+//   - pageSize: 每页的帖子数量。
+//
+// 返回：
+//   - []int64: 一个帖子 ID 的切片。
+//   - error: 如果操作失败，则返回错误对象，否则返回 nil。
 func GetPostIDs(ctx context.Context, order, pageNum, pageSize int) ([]int64, error) {
 	var key string
 
