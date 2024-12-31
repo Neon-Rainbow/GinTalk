@@ -4,6 +4,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	ProjectNameSpace = "GinTalk"
+)
+
 // metrics 指标
 // 其中包含了CPU使用率, 内存使用率, goroutine数量, 进程数量, 自定义计数器
 type metrics struct {
@@ -24,41 +28,34 @@ func NewMetrics() *metrics {
 
 	// cpuUsageGauge CPU使用率
 	cpuUsageGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "monitor",
+		Namespace: ProjectNameSpace,
 		Subsystem: "cpu",
 		Name:      "usage",
-		Help:      "The percentage of CPU usage",
+		Help:      "CPU 使用率",
 	}, []string{"instance"})
 
 	// memoryUsageGauge 内存使用率
 	memoryUsageGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "monitor",
+		Namespace: ProjectNameSpace,
 		Subsystem: "memory",
 		Name:      "usage",
-		Help:      "The percentage of memory usage",
+		Help:      "内存使用率",
 	}, []string{"instance"})
 
 	// goroutineGauge goroutine数量
 	goroutineGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "monitor",
+		Namespace: ProjectNameSpace,
 		Subsystem: "goroutine",
 		Name:      "num",
-		Help:      "The number of goroutines that currently exist",
+		Help:      "goroutine数量",
 	}, []string{"instance"})
 
 	// processNumGauge 进程数量
 	processNumGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "monitor",
+		Namespace: ProjectNameSpace,
 		Subsystem: "process",
 		Name:      "num",
-		Help:      "The number of processes that currently exist",
-	}, []string{"instance"})
-
-	customCounter := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "monitor",
-		Subsystem: "custom",
-		Name:      "num",
-		Help:      "The number of custom counter",
+		Help:      "进程数量",
 	}, []string{"instance"})
 
 	m := &metrics{
@@ -69,44 +66,8 @@ func NewMetrics() *metrics {
 	}
 
 	// 注册指标
-	prometheus.MustRegister(cpuUsageGauge, memoryUsageGauge, goroutineGauge, processNumGauge, customCounter)
+	prometheus.MustRegister(cpuUsageGauge, memoryUsageGauge, goroutineGauge, processNumGauge)
 	return m
-}
-
-// updateCpuUsage 更新CPU使用率
-//
-// 参数:
-//   - instance: 实例名称
-//   - value: CPU使用率
-func (m *metrics) updateCpuUsage(instance string, value float64) {
-	m.cpuUsageGauge.WithLabelValues(instance).Set(value)
-}
-
-// updateMemoryUsage 更新内存使用率
-//
-// 参数:
-//   - instance: 实例名称
-//   - value: 内存使用率
-func (m *metrics) updateMemoryUsage(instance string, value float64) {
-	m.memoryUsageGauge.WithLabelValues(instance).Set(value)
-}
-
-// updateGoroutineNum 更新goroutine数量
-//
-// 参数:
-//   - instance: 实例名称
-//   - value: goroutine数量
-func (m *metrics) updateGoroutineNum(instance string, value float64) {
-	m.goroutineGauge.WithLabelValues(instance).Set(value)
-}
-
-// updateProcessNum 更新进程数量
-//
-// 参数:
-//   - instance: 实例名称
-//   - value: 进程数量
-func (m *metrics) updateProcessNum(instance string, value float64) {
-	m.processNumGauge.WithLabelValues(instance).Set(value)
 }
 
 // HttpRequest http请求指标

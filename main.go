@@ -6,6 +6,7 @@ import (
 	"GinTalk/etcd"
 	"GinTalk/kafka"
 	"GinTalk/logger"
+	"GinTalk/metrics"
 	"GinTalk/pkg/snowflake"
 	"GinTalk/router"
 	"GinTalk/settings"
@@ -21,6 +22,9 @@ func main() {
 	if err := logger.SetupGlobalLogger(settings.GetConfig().LoggerConfig); err != nil {
 		panic(fmt.Sprintf("初始化日志失败: %v\n", err))
 	}
+
+	// 初始化 Prometheus
+	metrics.NewMetrics().AutoUpdateMetrics()
 
 	// 初始化配置
 	kafka.InitKafkaManager()

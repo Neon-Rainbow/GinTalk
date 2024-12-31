@@ -10,6 +10,42 @@ import (
 	"github.com/shirou/gopsutil/process"
 )
 
+// updateCpuUsage 更新CPU使用率
+//
+// 参数:
+//   - instance: 实例名称
+//   - value: CPU使用率
+func (m *metrics) updateCpuUsage(instance string, value float64) {
+	m.cpuUsageGauge.WithLabelValues(instance).Set(value)
+}
+
+// updateMemoryUsage 更新内存使用率
+//
+// 参数:
+//   - instance: 实例名称
+//   - value: 内存使用率
+func (m *metrics) updateMemoryUsage(instance string, value float64) {
+	m.memoryUsageGauge.WithLabelValues(instance).Set(value)
+}
+
+// updateGoroutineNum 更新goroutine数量
+//
+// 参数:
+//   - instance: 实例名称
+//   - value: goroutine数量
+func (m *metrics) updateGoroutineNum(instance string, value float64) {
+	m.goroutineGauge.WithLabelValues(instance).Set(value)
+}
+
+// updateProcessNum 更新进程数量
+//
+// 参数:
+//   - instance: 实例名称
+//   - value: 进程数量
+func (m *metrics) updateProcessNum(instance string, value float64) {
+	m.processNumGauge.WithLabelValues(instance).Set(value)
+}
+
 func (m *metrics) AutoUpdateMetrics() {
 	for range time.Tick(time.Second) {
 		// 此处需要保证 go 版本至少为 1.23, 以保证 time.Tick() 不会泄漏
