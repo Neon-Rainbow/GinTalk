@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	NoOrder = iota
+	_ = iota
 	OrderByHot
 	OrderByTime
 
