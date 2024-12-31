@@ -104,3 +104,20 @@ func (c configOption) apply(o *Service) {
 func WithConfig(c settings.ServiceRegistry) Options {
 	return configOption{c}
 }
+
+type Default struct{}
+
+func (d Default) apply(o *Service) {
+	o.ID = "default_id"
+	o.Name = "default_name"
+	o.Host = "localhost"
+	o.Port = 8080
+	o.LeaseTime = 60
+	o.Interval = 10
+	o.Timeout = 10
+	o.DeregisterAfter = 60
+}
+
+func WithDefault() Options {
+	return Default{}
+}
