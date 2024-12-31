@@ -62,6 +62,10 @@ type ServiceRegistry struct {
 	DeregisterAfter int64  `mapstructure:"deregisterAfter"`
 }
 
+type KafkaConfig struct {
+	Brokers []string `mapstructure:"brokers"`
+}
+
 type Settings struct {
 	Host             string `mapstructure:"host"`
 	Port             int    `mapstructure:"port"`
@@ -73,6 +77,7 @@ type Settings struct {
 	*LoggerConfig    `mapstructure:"logger"`
 	*Etcd            `mapstructure:"etcd"`
 	*ServiceRegistry `mapstructure:"service_registry"`
+	*KafkaConfig     `mapstructure:"kafka"`
 }
 
 // mustInitConfig 用于初始化配置文件

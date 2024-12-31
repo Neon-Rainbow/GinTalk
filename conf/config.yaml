@@ -5,7 +5,7 @@ password_secret: "123456"
 mode: "debug" # 运行模式：debug, test, release
 
 mysql:
-  host: 127.0.0.1
+  host: mysql
   port: 3306
   user: root
   password: 123456
@@ -18,7 +18,7 @@ mysql:
     parameterizedQueries: false # 是否参数化查询
 
 redis:
-  host: 127.0.0.1
+  host: redis
   port: 6379
   db: 0
 
@@ -37,6 +37,9 @@ serviceRegistry:
   timeout: "3s"   # consul 超时时间
   deregisterAfter: "1m"  # consul 多久之后注销服务
 
+kafka:
+  brokers:
+    - "127.0.0.1:9092"
 
 logger:
   level: 0     # 日志级别：-1 - Debug, 0 - Info, 1 - Warn, 2 - Error, 3 - DPanic, 4 - Panic, 5 - Fatal

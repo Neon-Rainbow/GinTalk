@@ -1,13 +1,12 @@
 package metrics
 
 import (
-	"go.uber.org/zap"
-	"runtime"
-	"time"
-
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/shirou/gopsutil/process"
+	"go.uber.org/zap"
+	"runtime"
+	"time"
 )
 
 // updateCpuUsage 更新CPU使用率
@@ -47,10 +46,12 @@ func (m *metrics) updateProcessNum(instance string, value float64) {
 }
 
 func (m *metrics) AutoUpdateMetrics() {
-	for range time.Tick(time.Second) {
-		// 此处需要保证 go 版本至少为 1.23, 以保证 time.Tick() 不会泄漏
-		m.update()
-	}
+	go func(*metrics) {
+		for range time.Tick(time.Second) {
+			// 此处需要保证 go 版本至少为 1.23, 以保证 time.Tick() 不会泄漏
+			m.update()
+		}
+	}(m)
 }
 
 // update 更新指标

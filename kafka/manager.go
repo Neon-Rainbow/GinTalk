@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"GinTalk/DTO"
+	"GinTalk/settings"
 	"GinTalk/websocket"
 	"context"
 	"encoding/json"
@@ -205,7 +206,7 @@ func (km *Manager) Close() {
 // 它设置 Kafka brokers 和 topics，并在单独的 goroutine 中开始消费指定 topics 的消息。
 // 此函数使用 sync.Once 机制确保初始化只执行一次。
 func InitKafkaManager() {
-	brokers := []string{"localhost:9092"}
+	brokers := settings.GetConfig().KafkaConfig.Brokers
 	topics := []string{TopicCreatePost, TopicLike, TopicComment, TopicNotification}
 
 	// 初始化 KafkaManager
