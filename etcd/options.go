@@ -102,9 +102,9 @@ func WithConfig(c settings.ServiceRegistry) Options {
 	return configOption{c}
 }
 
-type Default struct{}
+type defaultOption struct{}
 
-func (d Default) apply(o *Service) {
+func (d defaultOption) apply(o *Service) {
 	o.ID = "default_id"
 	o.Name = "default_name"
 	o.Host = "localhost"
@@ -116,5 +116,5 @@ func (d Default) apply(o *Service) {
 }
 
 func WithDefault() Options {
-	return Default{}
+	return defaultOption{}
 }
