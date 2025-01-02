@@ -5,9 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
+
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
-	"sync"
 )
 
 // Service 服务
@@ -37,10 +38,14 @@ var (
 //
 // 示例:
 //
-//	service := etcd.Register(etcd.WithID("test"), etcd.WithName("test"), etcd.WithHost(" localhost"), etcd.WithPort(8080))
-//	service := etcd.Register(etcd.WithConfig(settings.GetConfig().ServiceRegistry))
+// 	service := etcd.Register(etcd.WithID("test"), etcd.WithName("test"), etcd.WithHost(" localhost"), etcd.WithPort(8080))
+// 	service := etcd.Register(etcd.WithConfig(settings.GetConfig().ServiceRegistry))
+//	service := etcd.Register()
 func newService(options ...Options) *Service {
 	s := &Service{}
+	if len(options) == 0 {
+		options = append(options, WithDefault())
+	}
 	for _, option := range options {
 		option.apply(s)
 	}
