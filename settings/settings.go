@@ -52,14 +52,11 @@ type Etcd struct {
 }
 
 type ServiceRegistry struct {
-	ID              string `mapstructure:"id"`
-	Name            string `mapstructure:"name"`
-	Host            string `mapstructure:"host"`
-	Port            int    `mapstructure:"port"`
-	LeaseTime       int64  `mapstructure:"leaseTime"`
-	Interval        int64  `mapstructure:"interval"`
-	Timeout         int64  `mapstructure:"timeout"`
-	DeregisterAfter int64  `mapstructure:"deregisterAfter"`
+	ID        string `mapstructure:"id"`
+	Name      string `mapstructure:"name"`
+	Host      string `mapstructure:"host"`
+	Port      int    `mapstructure:"port"`
+	LeaseTime int64  `mapstructure:"leaseTime"`
 }
 
 type KafkaConfig struct {

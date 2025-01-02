@@ -5,7 +5,7 @@ password_secret: "123456"
 mode: "debug" # 运行模式：debug, test, release
 
 mysql:
-  host: mysql
+  host: 127.0.0.1
   port: 3306
   user: root
   password: 123456

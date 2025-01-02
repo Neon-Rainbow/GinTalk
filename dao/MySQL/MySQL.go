@@ -3,6 +3,7 @@ package MySQL
 import (
 	"GinTalk/settings"
 	"fmt"
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -64,9 +65,9 @@ func Close() {
 func GetDB() *gorm.DB {
 	// 使用 sync.Once 确保数据库只初始化一次
 	once.Do(func() {
-		cfg := settings.GetConfig()
-		if err := initDB(cfg.MysqlConfig); err != nil {
-			log.Fatalf("failed to connect to database: %v", err)
+		cfg := settings.GetConfig().MysqlConfig
+		if err := initDB(cfg); err != nil {
+			zap.L().Fatal("initDB failed", zap.Error(err))
 		}
 	})
 

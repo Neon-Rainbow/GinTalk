@@ -96,9 +96,6 @@ func (c configOption) apply(o *Service) {
 	o.Host = c.Host
 	o.Port = c.Port
 	o.LeaseTime = c.LeaseTime
-	o.Interval = c.Interval
-	o.Timeout = c.Timeout
-	o.DeregisterAfter = c.DeregisterAfter
 }
 
 func WithConfig(c settings.ServiceRegistry) Options {

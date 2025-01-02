@@ -29,7 +29,7 @@ var (
 	newEtcdServiceOnce sync.Once
 )
 
-// newService 用于注册服务
+// NewService 用于注册服务
 // 参数:
 //   - options: 服务配置
 //
@@ -41,23 +41,30 @@ var (
 // 	service := etcd.Register(etcd.WithID("test"), etcd.WithName("test"), etcd.WithHost(" localhost"), etcd.WithPort(8080))
 // 	service := etcd.Register(etcd.WithConfig(settings.GetConfig().ServiceRegistry))
 //	service := etcd.Register()
-func newService(options ...Options) *Service {
-	s := &Service{}
+func NewService(options ...Options) *Service {
+	cfg := settings.GetConfig().ServiceRegistry
+	s := &Service{
+		ID:        cfg.ID,
+		Name:      cfg.Name,
+		Host:      cfg.Host,
+		Port:      cfg.Port,
+		LeaseTime: cfg.LeaseTime,
+	}
+
 	if len(options) == 0 {
 		options = append(options, WithDefault())
 	}
 	for _, option := range options {
 		option.apply(s)
 	}
+	service = s
 	return s
 }
 
 func GetService() *Service {
-	newEtcdServiceOnce.Do(func() {
-		service = newService(
-			WithConfig(*settings.GetConfig().ServiceRegistry),
-		)
-	})
+	if service == nil {
+		zap.L().Fatal("etcd服务未初始化")
+	}
 	return service
 }
 

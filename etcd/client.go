@@ -37,7 +37,7 @@ func newClient(endpoints []string, timeout time.Duration) {
 //   - *clientv3.Client: etcd client 指针
 func GetClient() *clientv3.Client {
 	once.Do(func() {
-		cfg := settings.GetConfig()
+		cfg := settings.GetConfig().Etcd
 		newClient(cfg.Endpoints, time.Duration(cfg.Timeout)*time.Second)
 	})
 	return client

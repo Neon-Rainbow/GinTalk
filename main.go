@@ -28,14 +28,15 @@ func main() {
 
 	// 初始化配置
 	kafka.InitKafkaManager()
-	defer kafka.GetKafkaManager().Close()
 
-	defer MySQL.Close()
-	defer Redis.Close()
-
+	etcd.NewService()
 	if err := etcd.GetService().Register(); err != nil {
 		zap.L().Fatal("注册服务失败", zap.Error(err))
 	}
+
+	defer kafka.GetKafkaManager().Close()
+	defer MySQL.Close()
+	defer Redis.Close()
 
 	// 初始化路由
 	r := router.SetupRouter()

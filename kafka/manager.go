@@ -47,6 +47,23 @@ func newKafkaManager(brokers []string, topics []string, groupID string) *Manager
 		conn.Close()
 	}
 
+	// 创建 Kafka 主题
+	for _, topic := range topics {
+		conn, err := kafka.Dial("tcp", brokers[0])
+		if err != nil {
+			zap.L().Fatal("连接 Kafka 失败", zap.Error(err))
+			return nil
+		}
+		if err := conn.CreateTopics(kafka.TopicConfig{
+			Topic:             topic,
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		}); err != nil {
+			zap.L().Fatal("创建 Kafka 主题失败", zap.Error(err))
+		}
+		conn.Close()
+	}
+
 	// 初始化生产者
 	for _, topic := range topics {
 		writers[topic] = &kafka.Writer{
