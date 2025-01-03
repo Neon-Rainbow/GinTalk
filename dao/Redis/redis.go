@@ -50,7 +50,7 @@ func GetRedisClient() *redis.Client {
 		func() {
 			err := initRedis(settings.GetConfig().RedisConfig)
 			if err != nil {
-				panic(err)
+				zap.L().Fatal("初始化redis连接失败", zap.Error(err))
 			}
 		})
 	return redisClient
