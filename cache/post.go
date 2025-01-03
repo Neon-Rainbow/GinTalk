@@ -157,7 +157,7 @@ func GetPostSummary(ctx context.Context, postID []int64) ([]DTO.PostSummary, []i
 		strKeys[i] = GenerateRedisKey(PostSummaryTemplate, key)
 	}
 	values, err := Redis.GetRedisClient().MGet(ctx, strKeys...).Result()
-	if err != nil {
+	if err != nil  {
 		return nil, nil, err
 	}
 	result := make([]DTO.PostSummary, len(values))

@@ -70,8 +70,8 @@ func NewMetrics() *metrics {
 	return m
 }
 
-// HttpRequest http请求指标
-var HttpRequest = NewHttpRequestMetrics()
+// HttpCountRequest http请求指标
+var HttpCountRequest = NewHttpRequestMetrics()
 
 type HttpRequestMetrics struct {
 	httpRequestCounter *prometheus.CounterVec
@@ -80,10 +80,10 @@ type HttpRequestMetrics struct {
 // NewHttpRequestMetrics 创建http请求指标
 func NewHttpRequestMetrics() *HttpRequestMetrics {
 	httpRequestCounter := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "monitor",
+		Namespace: ProjectNameSpace,
 		Subsystem: "http",
 		Name:      "request",
-		Help:      "The number of http request",
+		Help:      "HTTP 请求次数",
 	}, []string{"method", "path", "status"})
 
 	prometheus.MustRegister(httpRequestCounter)
@@ -101,7 +101,33 @@ func NewHttpRequestMetrics() *HttpRequestMetrics {
 //
 // 使用示例:
 //
-//	metrics.HttpRequest.AddCounter("GET", "/ping", "200")
+//	metrics.HttpCountRequest.AddCounter("GET", "/ping", "200")
 func (m *HttpRequestMetrics) AddCounter(method, path, status string) {
 	m.httpRequestCounter.WithLabelValues(method, path, status).Add(1)
+}
+
+var HttpDuration = NewHttpDurationMetrics()
+
+type HttpDurationMetrics struct {
+	httpDurationHistogram *prometheus.HistogramVec
+}
+
+// NewHttpDurationMetrics 创建http请求耗时指标
+func NewHttpDurationMetrics() *HttpDurationMetrics {
+	httpDurationHistogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: ProjectNameSpace,
+		Subsystem: "http",
+		Name:      "duration",
+		Help:      "HTTP 请求耗时",
+		Buckets:   prometheus.DefBuckets,
+	}, []string{"method", "path", "status"})
+
+	prometheus.MustRegister(httpDurationHistogram)
+	return &HttpDurationMetrics{
+		httpDurationHistogram: httpDurationHistogram,
+	}
+}
+
+func (m *HttpDurationMetrics) AddHistogram(method, path, status string, duration float64) {
+	m.httpDurationHistogram.WithLabelValues(method, path, status).Observe(duration)
 }

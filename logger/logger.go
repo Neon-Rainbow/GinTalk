@@ -102,6 +102,7 @@ func GinLogger(logger *zap.Logger) gin.HandlerFunc {
 		c.Next()
 
 		cost := time.Since(start)
+		c.Set("cost", cost) // 将耗时存储在context中, 以便后续使用
 		logger.Info(path,
 			zap.Int("status", c.Writer.Status()),
 			zap.String("method", c.Request.Method),

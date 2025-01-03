@@ -19,6 +19,9 @@ func PrometheusMiddleware() gin.HandlerFunc {
 		statusCode := c.Writer.Status()
 
 		// 统计接口访问次数
-		metrics.HttpRequest.AddCounter(method, path, strconv.Itoa(statusCode))
+		metrics.HttpCountRequest.AddCounter(method, path, strconv.Itoa(statusCode))
+
+		// 统计接口访问耗时
+		metrics.HttpDuration.AddHistogram(method, path, strconv.Itoa(statusCode), c.GetFloat64("cost"))
 	}
 }
