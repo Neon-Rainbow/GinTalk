@@ -18,7 +18,7 @@ mysql:
     parameterizedQueries: false # 是否参数化查询
 
 redis:
-  host: redis
+  host: 127.0.0.1
   port: 6379
   db: 0
 
@@ -40,7 +40,7 @@ kafka:
 
 logger:
   level: 0     # 日志级别：-1 - Debug, 0 - Info, 1 - Warn, 2 - Error, 3 - DPanic, 4 - Panic, 5 - Fatal
-  format: "json"      # 输出格式：console 或 json
+  format: "console"      # 输出格式：console 或 json
   outputPaths:        # 日志输出路径，可以是多个
     - "stdout"        # 输出到标准输出
     - "./logs/app.log" # 输出到文件
