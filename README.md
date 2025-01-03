@@ -2,13 +2,15 @@
 使用Gin框架搭建的论坛项目
 
 ## 项目部署:
-项目的MySQL以及Redis使用了Docker部署
-项目使用docker部署,docker具体可以修改[docker-compose.yml](docker-compose.yml)
+项目的MySQL,Redis,etcd,kafka,prometheus使用了Docker部署
+项目使用docker部署,docker具体可以修改[docker-compose文件](docker-compose)
 
 使用下列指令启动所有在 docker-compose.yml 文件中定义的服务
 ```shell
 docker-compose up
 ```
+
+这些服务也都可以自行部署
 
 项目的具体配置信息在[配置文件](./conf/config.yaml)中,具体配置需求可以修改该文件
 

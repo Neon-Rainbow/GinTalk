@@ -5,29 +5,29 @@ scrape_configs:
   # Prometheus 自身的监控
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['prometheus:9090']
+      - targets: ['host.docker.internal:9090']
 
   # 监控 ETCD 的状态
   - job_name: 'etcd'
     static_configs:
-      - targets: ['etcd:2379']
+      - targets: ['host.docker.internal:2379']
 
   # 监控 Redis 的状态
   - job_name: 'redis'
     static_configs:
-      - targets: ['redis:6379']
+      - targets: ['host.docker.internal:6379']
 
   # 监控 Kafka 的状态
   - job_name: 'kafka'
     static_configs:
-      - targets: ['kafka_broker:9092']
+      - targets: ['host.docker.internal:39092']
 
   # 监控 MySQL 的状态
   - job_name: 'mysql'
     static_configs:
-      - targets: ['mysql:3306']
+      - targets: ['host.docker.internal:3306']
 
   # 监控 GinTalk 服务的状态
   - job_name: 'gin-talk'
     static_configs:
-      - targets: ['gin-talk:8080']
+      - targets: ['host.docker.internal:8080']
