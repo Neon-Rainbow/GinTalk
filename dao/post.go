@@ -147,12 +147,12 @@ func UpdatePost(ctx context.Context, post *DTO.PostDetail, summary string) error
 		return fmt.Errorf("内容不能为空")
 	}
 	tx := MySQL.GetDB().WithContext(ctx).Begin()
-	sqlStr := `UMySQL.GetDB()ATE post SET title = ?, summary = ? WHERE post_id = ?`
+	sqlStr := `UPDATE post SET title = ?, summary = ? WHERE post_id = ?`
 	err := tx.Exec(sqlStr, post.Title, summary, post.PostID).Error
 	if err != nil {
 		tx.Rollback()
 	}
-	sqlStr = `UMySQL.GetDB()ATE post_content SET content = ? WHERE post_id = ?`
+	sqlStr = `UPDATE post_content SET content = ? WHERE post_id = ?`
 	err = tx.Exec(sqlStr, post.Content, post.PostID).Error
 	if err != nil {
 		tx.Rollback()
