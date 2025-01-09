@@ -6,27 +6,19 @@ import (
 
 // getCurrentUserID 获取当前登录用户的ID
 func getCurrentUserID(c *gin.Context) (userID int64, exist bool) {
-	_userID, ok := c.Get(ContextUserIDKey)
-	if !ok {
+	userID = c.GetInt64(ContextUserIDKey)
+	if userID == 0 {
 		return 0, false
 	}
-	userID, ok = _userID.(int64)
-	if !ok {
-		return 0, false
-	}
-	return
+	return userID, true
 }
 
 func getCurrentUsername(c *gin.Context) (username string, exist bool) {
-	_username, ok := c.Get(ContextUsernameKey)
-	if !ok {
+	username = c.GetString(ContextUsernameKey)
+	if username == "" {
 		return "", false
 	}
-	username, ok = _username.(string)
-	if !ok {
-		return "", false
-	}
-	return
+	return username, true
 }
 
 // isUserIDMatch 检查给定的 userID 是否与从 gin.Context 中提取的当前用户 ID 匹配。
