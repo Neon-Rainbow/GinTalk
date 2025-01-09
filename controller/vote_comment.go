@@ -22,8 +22,7 @@ func VoteCommentController(c *gin.Context) {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	apiError := service.VoteComment(voteComment.UserID, voteComment.CommentID)
-	if apiError != nil {
+	if apiError := service.VoteComment(voteComment.UserID, voteComment.CommentID); apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
 	}
@@ -44,8 +43,7 @@ func RemoveVoteCommentController(c *gin.Context) {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	apiError := service.RemoveVoteComment(voteComment.UserID, voteComment.CommentID)
-	if apiError != nil {
+	if apiError := service.RemoveVoteComment(voteComment.UserID, voteComment.CommentID); apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
 	}

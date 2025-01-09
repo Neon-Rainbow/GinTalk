@@ -33,8 +33,7 @@ func CreatePostHandler(c *gin.Context) {
 		return
 	}
 
-	apiError := service.CreatePost(c.Request.Context(), &post)
-	if apiError != nil {
+	if apiError := service.CreatePost(c.Request.Context(), &post); apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		zap.L().Error("kafka.SendPostMessage() 失败", zap.Error(apiError))
 		return
@@ -149,8 +148,7 @@ func UpdatePostHandler(c *gin.Context) {
 		zap.L().Info("UpdatePostHandler.isUserIDMatch() 失败")
 		return
 	}
-	apiError := service.UpdatePost(c.Request.Context(), &post)
-	if apiError != nil {
+	if apiError := service.UpdatePost(c.Request.Context(), &post); apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		zap.L().Error("PostServiceInterface.UpdatePost() 失败", zap.Error(apiError))
 		return
@@ -171,8 +169,7 @@ func DeletePostHandler(c *gin.Context) {
 		return
 	}
 
-	apiError := service.DeletePost(c.Request.Context(), p.PostID)
-	if apiError != nil {
+	if apiError := service.DeletePost(c.Request.Context(), p.PostID); apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		zap.L().Error("PostServiceInterface.DeletePost() 失败", zap.Error(apiError))
 		return

@@ -25,8 +25,7 @@ func VotePostHandler(c *gin.Context) {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	apiError := service.VotePost(c.Request.Context(), vote.PostID, vote.UserID)
-	if apiError != nil {
+	if apiError := service.VotePost(c.Request.Context(), vote.PostID, vote.UserID); apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
 	}
@@ -49,8 +48,7 @@ func RevokeVoteHandler(c *gin.Context) {
 		ResponseErrorWithMsg(c, code.InvalidParam, err.Error())
 		return
 	}
-	apiError := service.RevokeVotePost(c.Request.Context(), vote.PostID, vote.UserID)
-	if apiError != nil {
+	if apiError := service.RevokeVotePost(c.Request.Context(), vote.PostID, vote.UserID); apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
 	}

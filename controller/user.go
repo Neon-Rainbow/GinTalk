@@ -61,8 +61,7 @@ func SignUpHandler(c *gin.Context) {
 	}
 	ctx := c.Request.Context()
 
-	apiError := service.SignupService(ctx, &SignupDTO)
-	if apiError != nil {
+	if apiError := service.SignupService(ctx, &SignupDTO); apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		zap.L().Error("AuthServiceInterface.SignupService() 失败", zap.Error(apiError))
 		return
@@ -115,8 +114,7 @@ func LogoutHandler(c *gin.Context) {
 	ctx := c.Request.Context()
 	refreshToken := c.Query("refresh_token")
 	accessToken := c.Query("access_token")
-	apiError := service.LogoutService(ctx, accessToken, refreshToken)
-	if apiError != nil {
+	if apiError := service.LogoutService(ctx, accessToken, refreshToken); apiError != nil {
 		ResponseErrorWithApiError(c, apiError)
 		return
 	}
